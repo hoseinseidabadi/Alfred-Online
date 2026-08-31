@@ -23,7 +23,8 @@
     "gate": "node scripts/check-resilience-tests.mjs",
     "build:packages": "npm run build -w @alfred-online/jalali -w @alfred-online/contracts",
     "pretest": "npm run build:packages",
-    "pretypecheck": "npm run build:packages"
+    "pretypecheck": "npm run build:packages",
+    "verify": "node scripts/verify.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
