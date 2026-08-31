@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "alfred-online-edge"
-database_id = "REPLACE_AFTER_D1_CREATE"
+database_id = "195183fd-5463-4b46-a89c-2d2dcee72c4f"
 migrations_dir = "migrations"
 
 # ── حالت گفت‌وگو و شمارنده (R-02، R-03) ────────────────────────────────────
@@ -31,6 +31,9 @@ crons = ["*/2 * * * *"]
 
 [vars]
 ENVIRONMENT = "development"
+# هستهٔ محلی — از Worker مستقرشده در دسترس نیست، پس صف انباشته می‌شود.
+# این دقیقاً سناریوی V-4 در دنیای واقعی است. با رفتن هسته روی لیارا عوض می‌شود.
+CORE_URL = "http://127.0.0.1:3001"
 
 # اسرار هرگز اینجا نمی‌آیند — فقط `.dev.vars` محلی و Secret Store در استقرار:
 #   TELEGRAM_TOKEN · WEBHOOK_SECRET · BRIDGE_KEY · CORE_URL · CHANNEL_ID
