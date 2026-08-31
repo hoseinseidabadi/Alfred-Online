@@ -20,7 +20,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "gate": "node scripts/check-resilience-tests.mjs"
+    "gate": "node scripts/check-resilience-tests.mjs",
+    "build:packages": "npm run build -w @alfred-online/jalali -w @alfred-online/contracts",
+    "pretest": "npm run build:packages",
+    "pretypecheck": "npm run build:packages"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

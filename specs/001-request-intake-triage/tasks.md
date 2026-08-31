@@ -82,8 +82,8 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 **Purpose**: تایپ‌های قرارداد، ماژول تاریخ، شمای داده و دو نگهبان امنیتی. **هیچ داستان کاربری
 پیش از کامل شدن این فاز شروع نمی‌شود.**
 
-- [ ] T011 ماژول تاریخ در `packages/jalali/src/index.ts` — تبدیل UTC به جلالی و ساعت تهران، قالب‌بندی تاریخ و ساعت، و محاسبهٔ اختلاف روز؛ **هیچ تابعی که تاریخ میلادی به بیرون بدهد صادر نشود** (R-07)
-- [ ] T012 آزمون ماژول تاریخ در `packages/jalali/tests/jalali.test.ts` — سال کبیسهٔ جلالی، مرز نیمه‌شب تهران، آفست ثابت `+03:30`، و اختلاف هفت‌روزه
+- [x] T011 ماژول تاریخ در `packages/jalali/src/index.ts` — تبدیل UTC به جلالی و ساعت تهران، قالب‌بندی تاریخ و ساعت، و محاسبهٔ اختلاف روز؛ **هیچ تابعی که تاریخ میلادی به بیرون بدهد صادر نشود** (R-07)
+- [x] T012 آزمون ماژول تاریخ در `packages/jalali/tests/jalali.test.ts` — سال کبیسهٔ جلالی، مرز نیمه‌شب تهران، آفست ثابت `+03:30`، و اختلاف هفت‌روزه
 - [ ] T013 تایپ‌های bridge-api در `packages/contracts/src/bridge.ts` — هر پنج نقطهٔ تماس [contracts/bridge-api.md](./contracts/bridge-api.md)
 - [ ] T014 تایپ‌های triage-api در `packages/contracts/src/triage.ts` — هر شش نقطهٔ تماس [contracts/triage-api.md](./contracts/triage-api.md)
 - [ ] T015 enum کدهای خطای قرارداد در `packages/contracts/src/errors.ts` — `REJECT_INCOMPLETE`، `APPROVAL_REQUIRED`، `SERVICE_REF_REQUIRED`، `MERGE_TARGET_REQUIRED`، `METRIC_AND_REVIEW_REQUIRED`، `EXACTLY_ONE_METRIC`، `MIN_THREE_CARDS`، `IMMUTABLE`
