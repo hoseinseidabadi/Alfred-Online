@@ -89,9 +89,9 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 - [x] T015 enum کدهای خطای قرارداد در `packages/contracts/src/errors.ts` — `REJECT_INCOMPLETE`، `APPROVAL_REQUIRED`، `SERVICE_REF_REQUIRED`، `MERGE_TARGET_REQUIRED`، `METRIC_AND_REVIEW_REQUIRED`، `EXACTLY_ONE_METRIC`، `MIN_THREE_CARDS`، `IMMUTABLE`
 - [x] T016 شمای Prisma برای همهٔ موجودیت‌های بخش «ب» [data-model.md](./data-model.md) در `apps/core/prisma/schema.prisma` — `Request`، `Submitter`، `Response`، `ExtractionRule`، `DerivedValue`، `QueueItem`، `Milestone`، `Decision`، `CouncilSession`، `AuditEntry`، `ReportPeriod`
 - [ ] T017 مهاجرت اولیه در `apps/core/prisma/migrations/0001_init/migration.sql` با **سیاست بدون حذف** — بدون `ON DELETE CASCADE` و بدون هیچ مسیر `DELETE` (ناوردای ۹، FR-027)
-- [ ] T018 نویسندهٔ سابقه در `apps/core/src/common/audit.service.ts` — هر تغییر `type`، `isCritical`، `position` و `status` یک ردیف `AuditEntry` می‌سازد
-- [ ] T019 نشست و نقش‌ها در `apps/core/src/auth/session.module.ts` و `apps/core/src/auth/roles.guard.ts` — دو نقش `product` (خواندن و نوشتن) و `viewer` (فقط‌خواندنی)، مطابق R-08
-- [ ] T020 نگهبان پل در `apps/core/src/bridge/bridge-key.guard.ts` — هدر `X-Bridge-Key`؛ هر تماس بدون آن `401`
+- [x] T018 نویسندهٔ سابقه در `apps/core/src/common/audit.service.ts` — هر تغییر `type`، `isCritical`، `position` و `status` یک ردیف `AuditEntry` می‌سازد
+- [x] T019 نشست و نقش‌ها در `apps/core/src/auth/session.module.ts` و `apps/core/src/auth/roles.guard.ts` — دو نقش `product` (خواندن و نوشتن) و `viewer` (فقط‌خواندنی)، مطابق R-08
+- [x] T020 نگهبان پل در `apps/core/src/bridge/bridge-key.guard.ts` — هدر `X-Bridge-Key`؛ هر تماس بدون آن `401`
 - [x] T021 مهاجرت D1 لبه در `apps/edge/migrations/0001_init.sql` — جدول‌های `EdgeSubmission` و `OutboundResponse` با کلید اصلی `requestId` و `responseId` (پایهٔ idempotency)
 - [x] T022 راستی‌آزمایی webhook در `apps/edge/src/webhook/verify.ts` — تطبیق هدر `X-Telegram-Bot-Api-Secret-Token` با راز Secret Store (R-06)
 
