@@ -120,12 +120,12 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 
 - [x] T023 [US1] سرویس مهلت در `apps/core/src/modules/intake/deadline.service.ts` — محاسبهٔ `responseDueAt = submittedAt + 7d` و مشتق کردن `atRisk` **پیش از** نقض، با ساعت تزریق‌شونده (اصل IV، FR-030)
 - [x] T024 [US1] ✅ **آزمون الزامی ۵ — هشدار پیش از نقض تعهد** در `apps/core/tests/resilience/v8-deadline-warning.test.ts`؛ سناریوی **V-8** در `quickstart.md`: درخواستی با `submittedAt` شش روز پیش MUST قبل از رسیدن به روز هفتم `atRisk = true` بدهد. زمان کنترل‌شده، مطابق R-12
-- [ ] T025 [US1] سرویس ثبت‌کننده در `apps/core/src/modules/intake/submitter.service.ts` — upsert روی `chatId`، نگه‌داشت `unit` و `accessStatus`، شمارش `requestCount`
-- [ ] T026 [US1] سرویس درخواست در `apps/core/src/modules/intake/request.service.ts` — درج `Request` با `source = bot`، `originalType`، و `rawAnswers` **بدون هیچ نرمال‌سازی یا خلاصه‌سازی** (اصل II، ناوردای ۱)
-- [ ] T027 [US1] نقطهٔ تماس `POST /bridge/submissions` در `apps/core/src/bridge/bridge.controller.ts` — idempotent روی `requestId`، **حفظ ترتیب `submittedAt`**، پاسخ `{ accepted, rejected }`، و ادامهٔ پردازش بقیه در صورت رد شدن یک قلم
-- [ ] T028 [US1] نقطهٔ تماس `GET /bridge/health` در `apps/core/src/bridge/bridge.controller.ts` و ذخیرهٔ آمار معطل‌های دو جهت که لبه با هر تماس Cron می‌فرستد (FR-019 — نمایشش در T077)
-- [ ] T029 [US1] نقطهٔ تماس اختیاری `GET /bridge/access/{chatId}` در `apps/core/src/bridge/access.controller.ts` — فقط استثناهای دستی (FR-002)؛ در دسترس نبودنش MUST ثبت را متوقف نکند
-- [ ] T030 [US1] آزمون قرارداد در `apps/core/tests/contract/bridge-submissions.test.ts` — idempotency، حفظ ترتیب، و اینکه هسته `rawAnswers` را دست نمی‌زند
+- [x] T025 [US1] سرویس ثبت‌کننده در `apps/core/src/modules/intake/submitter.service.ts` — upsert روی `chatId`، نگه‌داشت `unit` و `accessStatus`، شمارش `requestCount`
+- [x] T026 [US1] سرویس درخواست در `apps/core/src/modules/intake/request.service.ts` — درج `Request` با `source = bot`، `originalType`، و `rawAnswers` **بدون هیچ نرمال‌سازی یا خلاصه‌سازی** (اصل II، ناوردای ۱)
+- [x] T027 [US1] نقطهٔ تماس `POST /bridge/submissions` در `apps/core/src/bridge/bridge.controller.ts` — idempotent روی `requestId`، **حفظ ترتیب `submittedAt`**، پاسخ `{ accepted, rejected }`، و ادامهٔ پردازش بقیه در صورت رد شدن یک قلم
+- [x] T028 [US1] نقطهٔ تماس `GET /bridge/health` در `apps/core/src/bridge/bridge.controller.ts` و ذخیرهٔ آمار معطل‌های دو جهت که لبه با هر تماس Cron می‌فرستد (FR-019 — نمایشش در T077)
+- [x] T029 [US1] نقطهٔ تماس اختیاری `GET /bridge/access/{chatId}` در `apps/core/src/bridge/access.controller.ts` — فقط استثناهای دستی (FR-002)؛ در دسترس نبودنش MUST ثبت را متوقف نکند
+- [x] T030 [US1] آزمون قرارداد در `apps/core/tests/contract/bridge-submissions.test.ts` — idempotency، حفظ ترتیب، و اینکه هسته `rawAnswers` را دست نمی‌زند
 
 ### ۳-ب) لبه — شماره و گفت‌وگو
 
@@ -144,10 +144,10 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 
 - [x] T041 [US1] ثبت بادوام در `apps/edge/src/submission/persist.ts` — صدور شماره از T031، نوشتن `EdgeSubmission` در D1 **پیش از هر تماس با هسته**، سپس ارسال پیام تأیید حاوی `REQ-NNN` و مهلت هفت‌روزه به **تاریخ جلالی** با `packages/jalali` (اصل III، FR-015)
 - [x] T042 [US1] ✅ **آزمون الزامی ۱ — تکمیل ثبت با هستهٔ در دسترس نبودن** در `apps/edge/tests/resilience/v4-submit-core-down.test.ts`؛ سناریوی **V-4**: با هستهٔ ساختگیِ خطاده، شماره صادر می‌شود، کاربر هیچ تفاوتی حس نمی‌کند، و رکورد در D1 با `deliveredToCoreAt = null` می‌ماند
-- [ ] T043 [US1] کلاینت صف خروجی در `apps/edge/src/bridge/outbox.ts` — ارسال تحویل‌نشده‌ها به `POST /bridge/submissions` **به‌ترتیب `submittedAt`**، idempotency با `requestId`، عقب‌نشینی نمایی، افزایش `deliveryAttempts` و ثبت `lastError`؛ **هیچ رکوردی حذف نمی‌شود**
+- [x] T043 [US1] کلاینت صف خروجی در `apps/edge/src/bridge/outbox.ts` — ارسال تحویل‌نشده‌ها به `POST /bridge/submissions` **به‌ترتیب `submittedAt`**، idempotency با `requestId`، عقب‌نشینی نمایی، افزایش `deliveryAttempts` و ثبت `lastError`؛ **هیچ رکوردی حذف نمی‌شود**
 - [ ] T044 [US1] زمان‌بند در `apps/edge/src/bridge/cron.ts` — اجرای دوره‌ای با فاصلهٔ تعیین‌شده در T002، به‌علاوهٔ ارسال آمار معطل‌ها به T028
-- [ ] T045 [US1] ✅ **آزمون الزامی ۳ — تحویل صف پس از بازگشت ارتباط** در `apps/edge/tests/resilience/v5-queue-drain.test.ts`؛ سناریوی **V-5**: سه ثبت با هستهٔ خاموش، سپس روشن کردن و یک چرخهٔ Cron → هر سه **به‌ترتیب زمانی** و بدون تکرار؛ اجرای دوبارهٔ Cron MUST هیچ رکورد تکراری نسازد
-- [ ] T046 [US1] ✅ **SC-004 — قطعی ۷۲ ساعته، صفر گم‌شدگی** در `apps/edge/tests/resilience/v11-72h-outage.test.ts`؛ سناریوی **V-11** با زمان جهش‌داده‌شده: ۷۲ ساعت قطعی، N ثبت در طول آن، سپس اتصال → `N` رسیده، صفر گم‌شده، ترتیب حفظ‌شده، صفر تکراری
+- [x] T045 [US1] ✅ **آزمون الزامی ۳ — تحویل صف پس از بازگشت ارتباط** در `apps/edge/tests/resilience/v5-queue-drain.test.ts`؛ سناریوی **V-5**: سه ثبت با هستهٔ خاموش، سپس روشن کردن و یک چرخهٔ Cron → هر سه **به‌ترتیب زمانی** و بدون تکرار؛ اجرای دوبارهٔ Cron MUST هیچ رکورد تکراری نسازد
+- [x] T046 [US1] ✅ **SC-004 — قطعی ۷۲ ساعته، صفر گم‌شدگی** در `apps/edge/tests/resilience/v11-72h-outage.test.ts`؛ سناریوی **V-11** با زمان جهش‌داده‌شده: ۷۲ ساعت قطعی، N ثبت در طول آن، سپس اتصال → `N` رسیده، صفر گم‌شده، ترتیب حفظ‌شده، صفر تکراری
 - [ ] T047 [US1] آزمون یکپارچهٔ مسیر کامل در `apps/edge/tests/integration/v1-full-submission.test.ts` — سناریوهای **V-1** (شماره، تعهد، و `rawAnswers` عیناً فارسی) و **V-2** (واحد سازمانی بار دوم پرسیده نمی‌شود)
 - [ ] T048 [US1] آزمون غیرعضو در `apps/edge/tests/integration/v3-non-member.test.ts` — سناریوی **V-3**: ثبت انجام نمی‌شود، پیام راهنمای عضویت می‌آید، و تلاش برای سابقه ثبت می‌گردد
 
