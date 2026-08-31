@@ -1,0 +1,36 @@
+name = "alfred-online-edge"
+main = "src/index.ts"
+compatibility_date = "2026-08-31"
+compatibility_flags = ["nodejs_compat"]
+
+# ── صف دوطرفهٔ بادوام (R-04) ───────────────────────────────────────────────
+# database_id پس از `wrangler d1 create alfred-online-edge` پر می‌شود.
+[[d1_databases]]
+binding = "DB"
+database_name = "alfred-online-edge"
+database_id = "REPLACE_AFTER_D1_CREATE"
+migrations_dir = "migrations"
+
+# ── حالت گفت‌وگو و شمارنده (R-02، R-03) ────────────────────────────────────
+[[durable_objects.bindings]]
+name = "CONVERSATION"
+class_name = "ConversationDO"
+
+[[durable_objects.bindings]]
+name = "COUNTER"
+class_name = "CounterDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ConversationDO", "CounterDO"]
+
+# ── زمان‌بند پل (R-04) ─────────────────────────────────────────────────────
+# مقدار موقت. خروجی spike S-2 (T002) این عدد را نهایی می‌کند.
+[triggers]
+crons = ["*/2 * * * *"]
+
+[vars]
+ENVIRONMENT = "development"
+
+# اسرار هرگز اینجا نمی‌آیند — فقط `.dev.vars` محلی و Secret Store در استقرار:
+#   TELEGRAM_TOKEN · WEBHOOK_SECRET · BRIDGE_KEY · CORE_URL · CHANNEL_ID

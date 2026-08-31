@@ -1,0 +1,6 @@
+# رونوشت بگیر به `.dev.vars` و مقادیر واقعی را بگذار. `.dev.vars` در .gitignore است.
+TELEGRAM_TOKEN=""
+WEBHOOK_SECRET=""
+BRIDGE_KEY=""
+CORE_URL="http://127.0.0.1:3001"
+CHANNEL_ID=""

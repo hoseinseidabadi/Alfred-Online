@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+.wrangler
+coverage
+**/generated
+package-lock.json
+
+# اسناد فارسی Spec Kit — prettier جدول‌های RTL را با padding نادرست هم‌تراز می‌کند
+# و متن دوجهته را خواناتر نمی‌کند. دست‌نویس می‌مانند.
+specs/
+*.md

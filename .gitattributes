@@ -1,0 +1,7 @@
+# خط‌پایان در مخزن همیشه LF — CI روی لینوکس اجرا می‌شود، توسعه روی ویندوز.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary

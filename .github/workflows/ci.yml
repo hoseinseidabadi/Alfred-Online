@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # گیت مسدودکنندهٔ قانون اساسی — پنج آزمون تاب‌آوری + SC-004.
+      # شکست هرکدام یعنی شکست گیت، نه یک تست قرمز قابل چشم‌پوشی.
+      - name: آزمون‌های تاب‌آوری الزامی
+        run: npm run test:resilience
+
+      - name: همهٔ آزمون‌ها
+        run: npm test

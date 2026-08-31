@@ -1,0 +1,24 @@
+{
+  "name": "@alfred-online/dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@alfred-online/contracts": "*",
+    "@alfred-online/jalali": "*",
+    "next": "^16.3.3",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.11"
+  }
+}
