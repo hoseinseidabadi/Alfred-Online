@@ -1,0 +1,378 @@
+// شمای هستهٔ عملیاتی — منبع حقیقتِ حالت.
+//
+// منبع: specs/001-request-intake-triage/data-model.md بخش «ب»
+//
+// دو قاعدهٔ سراسری که در سرتاسر این فایل رعایت شده‌اند:
+//
+//   ۱. هیچ `onDelete: Cascade` — ناوردای ۹ و FR-027: هیچ رکوردی حذف نمی‌شود،
+//      حتی پس از رد. رابطه‌ها روی `Restrict` می‌مانند تا حذف اصلاً ممکن نباشد.
+//
+//   ۲. تمام زمان‌ها UTC ذخیره می‌شوند. هیچ ستون تاریخ جلالی وجود ندارد —
+//      تبدیل فقط در لایهٔ نمایش (R-07، ناوردای ۱۰).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── enum ها ──────────────────────────────────────────────────────────────
+
+enum Unit {
+  editorial
+  technical
+  commercial
+  management
+  other
+}
+
+enum RequestType {
+  bug
+  improvement
+  idea
+}
+
+enum RequestStatus {
+  new
+  triaged
+  queued
+  in_progress
+  answered
+  closed
+}
+
+enum TriageOutcome {
+  convert
+  merge
+  reject
+  need_data
+}
+
+enum RequestSource {
+  bot
+  fast_track
+  manual
+}
+
+enum AccessStatus {
+  member
+  exception
+  revoked
+}
+
+enum DerivedDimension {
+  confidence
+  severity
+  impact
+}
+
+enum MilestoneStatus {
+  on_track
+  at_risk
+  done
+}
+
+enum DecisionForum {
+  council
+  fast_track
+}
+
+enum DecisionOutcome {
+  execute
+  park
+  reject
+}
+
+enum ReviewOutcome {
+  worked
+  did_not_work
+  inconclusive
+}
+
+// ─── درخواست ──────────────────────────────────────────────────────────────
+
+model Request {
+  /// `REQ-NNN` — در **لبه** صادر می‌شود، نه اینجا. هرگز تغییر نمی‌کند (FR-020، ناوردای ۳).
+  id String @id
+
+  /// قابل تغییر در تریاژ **بدون** تغییر `id` (FR-021).
+  type RequestType
+
+  /// حدس اولیهٔ ثبت‌کننده — برای سنجش نرخ دسته‌بندی اشتباه.
+  originalType RequestType
+
+  submitterId String
+  submitter   Submitter @relation(fields: [submitterId], references: [id], onDelete: Restrict)
+  unit        Unit
+
+  /// عین متن فارسی. **تغییرناپذیر پس از درج** — اصل II، ناوردای ۱، FR-024.
+  /// نگهبانی‌اش در کد است (T060 → `403 IMMUTABLE`)، چون Postgres ستون
+  /// «فقط یک بار نوشتنی» ندارد.
+  rawAnswers Json
+
+  attachments Json @default("[]")
+
+  /// ارجاع به سرویس مخزن دانش، یا صریحاً `"unknown"` — الزامی (FR-022، SC-009).
+  /// فقط ارجاع، هرگز محتوا (اصل I).
+  serviceRef String?
+
+  status        RequestStatus  @default(new)
+  triageOutcome TriageOutcome?
+
+  /// وقتی `triageOutcome = merge`. خودارجاع، بدون حذف آبشاری.
+  mergedIntoId String?
+  mergedInto   Request?  @relation("RequestMerge", fields: [mergedIntoId], references: [id], onDelete: Restrict)
+  mergedFrom   Request[] @relation("RequestMerge")
+
+  /// شناسهٔ دوم پس از ارتقا به ایدهٔ ارزیابی‌شده (FR-023).
+  promotedRef String?
+
+  /// **فقط در تریاژ تعیین می‌شود، نه توسط ثبت‌کننده.**
+  isCritical Boolean @default(false)
+
+  submittedAt DateTime
+  /// `submittedAt + 7d` — هسته خودش حساب می‌کند (قرارداد bridge-api).
+  responseDueAt DateTime
+  /// بدون مقدار داشتن این، `status` MUST NOT به `closed` برود (ناوردای ۴، FR-029).
+  respondedAt DateTime?
+  closedAt    DateTime?
+
+  source RequestSource @default(bot)
+
+  responses     Response[]
+  derivedValues DerivedValue[]
+  queueItem     QueueItem?
+  decisions     Decision[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, responseDueAt])
+  @@index([submittedAt])
+  @@index([serviceRef])
+}
+
+// ─── ثبت‌کننده ────────────────────────────────────────────────────────────
+
+model Submitter {
+  id String @id @default(cuid())
+
+  /// هویت پیام‌رسان. یکتا — یک حساب تلگرام، یک ثبت‌کننده.
+  chatId      String @unique
+  displayName String
+
+  /// یک بار پرسیده می‌شود و برای همیشه می‌ماند (FR-003).
+  unit Unit
+
+  accessStatus AccessStatus @default(member)
+  firstSeenAt  DateTime     @default(now())
+  requestCount Int          @default(0)
+
+  requests Request[]
+}
+
+// ─── پاسخ ─────────────────────────────────────────────────────────────────
+
+model Response {
+  /// `RSP-NNNN` — کلید idempotency سمت لبه.
+  id String @id
+
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  kind TriageOutcome
+  body String
+
+  /// هر سه وقتی `kind = reject` الزامی‌اند — FR-031، ناوردای ۵.
+  /// nullable در شما، الزامی در اعتبارسنجی T056.
+  rejectUnderstood String?
+  rejectWhyNot     String?
+  rejectWhenYes    String?
+
+  /// **الزامی.** هیچ پاسخی بدون تأیید انسان ارسال نمی‌شود (اصل IV، FR-033).
+  approvedBy String
+  approvedAt DateTime
+
+  /// لبه آن را کشیده. تا پر نشدن `deliveredAt`، دوباره برگردانده می‌شود.
+  handedToEdgeAt DateTime?
+  /// فقط با ack لبه پر می‌شود (قرارداد bridge-api بند ۳).
+  deliveredAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+  @@index([deliveredAt])
+}
+
+// ─── قاعدهٔ استخراج و مقدار استخراج‌شده ───────────────────────────────────
+
+model ExtractionRule {
+  id      String @id @default(cuid())
+  version Int
+
+  dimension DerivedDimension
+
+  /// نگاشت پاسخ انسانی به مقدار — **داده، نه کد** (اصل II، R-11، FR-025).
+  mapping Json
+
+  effectiveFrom DateTime @default(now())
+  supersededBy  String?
+
+  @@unique([dimension, version])
+  @@index([dimension, effectiveFrom])
+}
+
+model DerivedValue {
+  id String @id @default(cuid())
+
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  dimension DerivedDimension
+  value     String
+
+  /// هر مقدار به قاعده‌ای که تولیدش کرده قابل ردیابی است (ناوردای ۲، FR-026).
+  ruleVersion Int
+  derivedAt   DateTime @default(now())
+
+  /// اگر انسان مقدار قاعده را دستی عوض کرده باشد.
+  overriddenBy String?
+
+  /// جدا از `rawAnswers` و هرگز جایگزین آن نمی‌شود (اصل II).
+  @@unique([requestId, dimension])
+  @@index([requestId])
+}
+
+// ─── صف ظرفیت و مایلستون ──────────────────────────────────────────────────
+
+model QueueItem {
+  id String @id @default(cuid())
+
+  requestId String  @unique
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  /// یکتا و پیوسته. صف **تک‌خطی** است (FR-036).
+  position Int @unique
+
+  /// آیتم بدون تخمین «تخمین‌نشده» علامت می‌خورد و در محاسبهٔ ظرفیت وارد نمی‌شود.
+  estimateDays Int?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  isFastTrack Boolean   @default(false)
+
+  /// ناوردای ۷ — حداکثر یک آیتم هم‌زمان `in_progress`. این قید در سطح پایگاه
+  /// داده با یک partial unique index در مهاجرت T089 بسته می‌شود؛ Prisma در شما
+  /// ایندکس شرطی ندارد.
+  @@index([position])
+}
+
+model Milestone {
+  id         String   @id @default(cuid())
+  title      String
+  targetDate DateTime
+
+  /// **مشتق از وابستگی‌ها، نه دستی** (FR-038).
+  status MilestoneStatus @default(on_track)
+
+  /// شناسهٔ `QueueItem` هایی که این مایلستون به آن‌ها وابسته است.
+  dependsOnQueueItems String[]
+
+  /// MUST به آیتم مسبب اشاره کند، وقتی `status = at_risk`.
+  riskReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── تصمیم و جلسه ─────────────────────────────────────────────────────────
+
+model CouncilSession {
+  id     String   @id @default(cuid())
+  heldAt DateTime
+
+  /// `count >= 3` — سامانه MUST NOT جلسهٔ تک‌کارتی را تشکیل‌شده ثبت کند
+  /// (FR-039، ناوردای ۸). اعتبارسنجی در T082.
+  cardsPresented String[]
+
+  snapshotPath String?
+
+  decisions Decision[]
+}
+
+model Decision {
+  id String @id @default(cuid())
+
+  requestId String
+  request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
+
+  forum   DecisionForum
+  outcome DecisionOutcome
+
+  /// الزامی وقتی `outcome = execute` — **دقیقاً یکی** (اصل V، FR-040، ناوردای ۶).
+  /// nullable در شما چون مسیر سریع بدون آن هم پذیرفته می‌شود.
+  successMetric String?
+  reviewDate    DateTime?
+
+  /// چه چیزی از صف عقب افتاد. همیشه ثبت می‌شود، حتی خالی (FR-037).
+  displaced Json @default("[]")
+
+  /// `true` یعنی مسیر سریعی که هنوز سه فیلدش کامل نشده. **اجرا را مسدود
+  /// نمی‌کند** — فقط پس از ۴۸ ساعت در هشدارها ظاهر می‌شود (FR-042، FR-043).
+  incomplete Boolean @default(false)
+
+  decidedAt DateTime @default(now())
+  decidedBy String
+
+  reviewOutcome ReviewOutcome?
+  reviewedAt    DateTime?
+
+  sessionId String?
+  session   CouncilSession? @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@index([requestId])
+  @@index([forum, decidedAt])
+  @@index([incomplete, decidedAt])
+  @@index([reviewDate])
+}
+
+// ─── سابقه و گزارش ────────────────────────────────────────────────────────
+
+model AuditEntry {
+  id String @id @default(cuid())
+
+  entity   String
+  entityId String
+  field    String
+  oldValue String?
+  newValue String?
+  actor    String
+  at       DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([at])
+}
+
+model ReportPeriod {
+  id   String   @id @default(cuid())
+  from DateTime
+  to   DateTime
+
+  submittedCount Int
+  evaluatedCount Int
+  executedCount  Int
+
+  avgResponseDays Float
+  slaBreaches     Int
+  unitDiversity   Int
+  fastTrackShare  Float
+
+  /// نرخ موفقیت به تفکیک مرجع (FR-044، SC-006).
+  successRateByForum Json
+
+  generatedAt DateTime @default(now())
+
+  @@unique([from, to])
+}
