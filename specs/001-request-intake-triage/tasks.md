@@ -118,8 +118,8 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 
 ### ۳-الف) هسته — عرضه‌کنندهٔ bridge-api (پیش از مصرف‌کننده)
 
-- [ ] T023 [US1] سرویس مهلت در `apps/core/src/modules/intake/deadline.service.ts` — محاسبهٔ `responseDueAt = submittedAt + 7d` و مشتق کردن `atRisk` **پیش از** نقض، با ساعت تزریق‌شونده (اصل IV، FR-030)
-- [ ] T024 [US1] ✅ **آزمون الزامی ۵ — هشدار پیش از نقض تعهد** در `apps/core/tests/resilience/v8-deadline-warning.test.ts`؛ سناریوی **V-8** در `quickstart.md`: درخواستی با `submittedAt` شش روز پیش MUST قبل از رسیدن به روز هفتم `atRisk = true` بدهد. زمان کنترل‌شده، مطابق R-12
+- [x] T023 [US1] سرویس مهلت در `apps/core/src/modules/intake/deadline.service.ts` — محاسبهٔ `responseDueAt = submittedAt + 7d` و مشتق کردن `atRisk` **پیش از** نقض، با ساعت تزریق‌شونده (اصل IV، FR-030)
+- [x] T024 [US1] ✅ **آزمون الزامی ۵ — هشدار پیش از نقض تعهد** در `apps/core/tests/resilience/v8-deadline-warning.test.ts`؛ سناریوی **V-8** در `quickstart.md`: درخواستی با `submittedAt` شش روز پیش MUST قبل از رسیدن به روز هفتم `atRisk = true` بدهد. زمان کنترل‌شده، مطابق R-12
 - [ ] T025 [US1] سرویس ثبت‌کننده در `apps/core/src/modules/intake/submitter.service.ts` — upsert روی `chatId`، نگه‌داشت `unit` و `accessStatus`، شمارش `requestCount`
 - [ ] T026 [US1] سرویس درخواست در `apps/core/src/modules/intake/request.service.ts` — درج `Request` با `source = bot`، `originalType`، و `rawAnswers` **بدون هیچ نرمال‌سازی یا خلاصه‌سازی** (اصل II، ناوردای ۱)
 - [ ] T027 [US1] نقطهٔ تماس `POST /bridge/submissions` در `apps/core/src/bridge/bridge.controller.ts` — idempotent روی `requestId`، **حفظ ترتیب `submittedAt`**، پاسخ `{ accepted, rejected }`، و ادامهٔ پردازش بقیه در صورت رد شدن یک قلم
