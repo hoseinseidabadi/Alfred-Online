@@ -136,20 +136,20 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 - [x] T035 [US1] ماشین حالت در `apps/edge/src/conversation/state-machine.ts` — گذارهای `idle → askUnit?* → askType → askQ1..Qn → askRoleQ → askAttachment → confirm → submitted`؛ `askUnit` فقط وقتی `unit` خالی است (FR-003)
 - [x] T036 [US1] شیء گفت‌وگو در `apps/edge/src/conversation/conversation.do.ts` — نگه‌داشت `ConversationState`، انقضای ۲۴ ساعتِ بی‌فعالیتی با انتخاب ادامه یا شروع تازه (FR-013)، دستور لغو، و **تأیید گرفتن** هنگام شروع ثبت تازه وسط گفت‌وگوی باز
 - [x] T037 [US1] ✅ **آزمون الزامی ۴ — بقای گفت‌وگوی نیمه‌تمام** در `apps/edge/tests/resilience/v6-conversation-survival.test.ts`؛ سناریوی **V-6**: بازراه‌اندازی لبه وسط سوال سوم MUST کاربر را از **همان سوال** ادامه دهد
-- [ ] T038 [US1] پیوست اختیاری در `apps/edge/src/conversation/attachments.ts` — تصویر، فایل و پیوند؛ پیوست بزرگ یا نامعتبر پیام روشن می‌گیرد و **ثبت بدون پیوست کامل می‌شود** (FR-011)
+- [x] T038 [US1] پیوست اختیاری در `apps/edge/src/conversation/attachments.ts` — تصویر، فایل و پیوند؛ پیوست بزرگ یا نامعتبر پیام روشن می‌گیرد و **ثبت بدون پیوست کامل می‌شود** (FR-011)
 - [x] T039 [US1] آداپتور مقصد در `apps/edge/src/telegram/adapter.ts` و رجیستری در `apps/edge/src/telegram/registry.ts` — الگوی بازاستفاده‌شده از Campaign Studio؛ منطق ثبت MUST به تلگرام گره نخورد (R-13)
-- [ ] T040 [US1] مسیریاب webhook در `apps/edge/src/webhook/router.ts` — اتصال ورودی راستی‌آزمایی‌شدهٔ T022 به شیء گفت‌وگوی کاربر
+- [x] T040 [US1] مسیریاب webhook در `apps/edge/src/webhook/router.ts` — اتصال ورودی راستی‌آزمایی‌شدهٔ T022 به شیء گفت‌وگوی کاربر
 
 ### ۳-پ) لبه — ثبت بادوام و پل خروجی
 
 - [x] T041 [US1] ثبت بادوام در `apps/edge/src/submission/persist.ts` — صدور شماره از T031، نوشتن `EdgeSubmission` در D1 **پیش از هر تماس با هسته**، سپس ارسال پیام تأیید حاوی `REQ-NNN` و مهلت هفت‌روزه به **تاریخ جلالی** با `packages/jalali` (اصل III، FR-015)
 - [x] T042 [US1] ✅ **آزمون الزامی ۱ — تکمیل ثبت با هستهٔ در دسترس نبودن** در `apps/edge/tests/resilience/v4-submit-core-down.test.ts`؛ سناریوی **V-4**: با هستهٔ ساختگیِ خطاده، شماره صادر می‌شود، کاربر هیچ تفاوتی حس نمی‌کند، و رکورد در D1 با `deliveredToCoreAt = null` می‌ماند
 - [x] T043 [US1] کلاینت صف خروجی در `apps/edge/src/bridge/outbox.ts` — ارسال تحویل‌نشده‌ها به `POST /bridge/submissions` **به‌ترتیب `submittedAt`**، idempotency با `requestId`، عقب‌نشینی نمایی، افزایش `deliveryAttempts` و ثبت `lastError`؛ **هیچ رکوردی حذف نمی‌شود**
-- [ ] T044 [US1] زمان‌بند در `apps/edge/src/bridge/cron.ts` — اجرای دوره‌ای با فاصلهٔ تعیین‌شده در T002، به‌علاوهٔ ارسال آمار معطل‌ها به T028
+- [x] T044 [US1] زمان‌بند در `apps/edge/src/bridge/cron.ts` — اجرای دوره‌ای با فاصلهٔ تعیین‌شده در T002، به‌علاوهٔ ارسال آمار معطل‌ها به T028
 - [x] T045 [US1] ✅ **آزمون الزامی ۳ — تحویل صف پس از بازگشت ارتباط** در `apps/edge/tests/resilience/v5-queue-drain.test.ts`؛ سناریوی **V-5**: سه ثبت با هستهٔ خاموش، سپس روشن کردن و یک چرخهٔ Cron → هر سه **به‌ترتیب زمانی** و بدون تکرار؛ اجرای دوبارهٔ Cron MUST هیچ رکورد تکراری نسازد
 - [x] T046 [US1] ✅ **SC-004 — قطعی ۷۲ ساعته، صفر گم‌شدگی** در `apps/edge/tests/resilience/v11-72h-outage.test.ts`؛ سناریوی **V-11** با زمان جهش‌داده‌شده: ۷۲ ساعت قطعی، N ثبت در طول آن، سپس اتصال → `N` رسیده، صفر گم‌شده، ترتیب حفظ‌شده، صفر تکراری
-- [ ] T047 [US1] آزمون یکپارچهٔ مسیر کامل در `apps/edge/tests/integration/v1-full-submission.test.ts` — سناریوهای **V-1** (شماره، تعهد، و `rawAnswers` عیناً فارسی) و **V-2** (واحد سازمانی بار دوم پرسیده نمی‌شود)
-- [ ] T048 [US1] آزمون غیرعضو در `apps/edge/tests/integration/v3-non-member.test.ts` — سناریوی **V-3**: ثبت انجام نمی‌شود، پیام راهنمای عضویت می‌آید، و تلاش برای سابقه ثبت می‌گردد
+- [x] T047 [US1] آزمون یکپارچهٔ مسیر کامل در `apps/edge/tests/integration/v1-full-submission.test.ts` — سناریوهای **V-1** (شماره، تعهد، و `rawAnswers` عیناً فارسی) و **V-2** (واحد سازمانی بار دوم پرسیده نمی‌شود)
+- [x] T048 [US1] آزمون غیرعضو در `apps/edge/tests/integration/v3-non-member.test.ts` — سناریوی **V-3**: ثبت انجام نمی‌شود، پیام راهنمای عضویت می‌آید، و تلاش برای سابقه ثبت می‌گردد
 
 **Checkpoint 🎯 MVP**: ثبت سرتاسری کار می‌کند. پنج آزمون علامت‌خوردهٔ ✅ این فاز سبزند
 (V-4، V-5، V-6، V-7، V-8) به‌علاوهٔ SC-004 / V-11. اینجا می‌شود **ایستاد، اعتبارسنجی کرد و
