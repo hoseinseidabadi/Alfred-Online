@@ -8,6 +8,28 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+
+    # آزمون‌های یکپارچهٔ هسته روی PostgreSQL واقعی اجرا می‌شوند، نه جایگزین
+    # درون‌حافظه‌ای. قید کلید خارجی و ایندکس یکتا در جایگزین وجود ندارند و
+    # آزمونشان آنجا فقط توهم پوشش است.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: alfred
+          POSTGRES_PASSWORD: alfred_ci
+          POSTGRES_DB: alfred_online_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U alfred -d alfred_online_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgresql://alfred:alfred_ci@127.0.0.1:5432/alfred_online_test?schema=public
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,13 +43,20 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Format
+        run: npm run format:check
+
       - name: Typecheck
         run: npm run typecheck
 
-      # گیت مسدودکنندهٔ قانون اساسی — پنج آزمون تاب‌آوری + SC-004.
-      # شکست هرکدام یعنی شکست گیت، نه یک تست قرمز قابل چشم‌پوشی.
-      - name: آزمون‌های تاب‌آوری الزامی
+      # نگهبانی که نبودِ شش آزمون الزامی را بی‌صدا رد نمی‌کند.
+      # این گیت تا نوشته شدن آن‌ها **عمداً قرمز** است — بند «تاب‌آوری و آزمون»
+      # قانون اساسی، که بر پیش‌فرض «تست‌ها اختیاری» غلبه دارد.
+      - name: گیت قانون اساسی — آزمون‌های تاب‌آوری الزامی
         run: npm run test:resilience
 
+      # آزمون‌های یکپارچه اگر پایگاه داده نباشد بی‌صدا رد می‌شوند و CI سبز
+      # می‌ماند. آزمون «پیش‌نیاز آزمون‌های یکپارچه» با دیدن CI=true خودش
+      # شکست می‌دهد، پس این سبزیِ دروغین ممکن نیست.
       - name: همهٔ آزمون‌ها
         run: npm test
