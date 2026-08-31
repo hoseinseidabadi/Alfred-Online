@@ -84,9 +84,9 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 
 - [x] T011 ماژول تاریخ در `packages/jalali/src/index.ts` — تبدیل UTC به جلالی و ساعت تهران، قالب‌بندی تاریخ و ساعت، و محاسبهٔ اختلاف روز؛ **هیچ تابعی که تاریخ میلادی به بیرون بدهد صادر نشود** (R-07)
 - [x] T012 آزمون ماژول تاریخ در `packages/jalali/tests/jalali.test.ts` — سال کبیسهٔ جلالی، مرز نیمه‌شب تهران، آفست ثابت `+03:30`، و اختلاف هفت‌روزه
-- [ ] T013 تایپ‌های bridge-api در `packages/contracts/src/bridge.ts` — هر پنج نقطهٔ تماس [contracts/bridge-api.md](./contracts/bridge-api.md)
-- [ ] T014 تایپ‌های triage-api در `packages/contracts/src/triage.ts` — هر شش نقطهٔ تماس [contracts/triage-api.md](./contracts/triage-api.md)
-- [ ] T015 enum کدهای خطای قرارداد در `packages/contracts/src/errors.ts` — `REJECT_INCOMPLETE`، `APPROVAL_REQUIRED`، `SERVICE_REF_REQUIRED`، `MERGE_TARGET_REQUIRED`، `METRIC_AND_REVIEW_REQUIRED`، `EXACTLY_ONE_METRIC`، `MIN_THREE_CARDS`، `IMMUTABLE`
+- [x] T013 تایپ‌های bridge-api در `packages/contracts/src/bridge.ts` — هر پنج نقطهٔ تماس [contracts/bridge-api.md](./contracts/bridge-api.md)
+- [x] T014 تایپ‌های triage-api در `packages/contracts/src/triage.ts` — هر شش نقطهٔ تماس [contracts/triage-api.md](./contracts/triage-api.md)
+- [x] T015 enum کدهای خطای قرارداد در `packages/contracts/src/errors.ts` — `REJECT_INCOMPLETE`، `APPROVAL_REQUIRED`، `SERVICE_REF_REQUIRED`، `MERGE_TARGET_REQUIRED`، `METRIC_AND_REVIEW_REQUIRED`، `EXACTLY_ONE_METRIC`، `MIN_THREE_CARDS`، `IMMUTABLE`
 - [ ] T016 شمای Prisma برای همهٔ موجودیت‌های بخش «ب» [data-model.md](./data-model.md) در `apps/core/prisma/schema.prisma` — `Request`، `Submitter`، `Response`، `ExtractionRule`، `DerivedValue`، `QueueItem`، `Milestone`، `Decision`، `CouncilSession`، `AuditEntry`، `ReportPeriod`
 - [ ] T017 مهاجرت اولیه در `apps/core/prisma/migrations/0001_init/migration.sql` با **سیاست بدون حذف** — بدون `ON DELETE CASCADE` و بدون هیچ مسیر `DELETE` (ناوردای ۹، FR-027)
 - [ ] T018 نویسندهٔ سابقه در `apps/core/src/common/audit.service.ts` — هر تغییر `type`، `isCritical`، `position` و `status` یک ردیف `AuditEntry` می‌سازد
