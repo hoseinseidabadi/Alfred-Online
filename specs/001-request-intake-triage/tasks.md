@@ -129,13 +129,13 @@ description: 'Task list — سامانهٔ ثبت و تصمیم‌گیری در�
 
 ### ۳-ب) لبه — شماره و گفت‌وگو
 
-- [ ] T031 [US1] شمارندهٔ سراسری در `apps/edge/src/counter/counter.do.ts` — Durable Object یکتا، صدور اتمیک `REQ-{n}` با `lastNumber` پایدار (R-03، FR-016)
-- [ ] T032 [US1] ✅ **آزمون الزامی ۲ — یکتایی شماره پس از بازراه‌اندازی** در `apps/edge/tests/resilience/v7-counter-uniqueness.test.ts`؛ سناریوی **V-7**: چند ثبت هم‌زمان به‌علاوهٔ بازراه‌اندازی شبیه‌سازی‌شدهٔ لبه MUST نه شمارهٔ تکراری بدهد نه شکاف پرش‌دار
+- [x] T031 [US1] شمارندهٔ سراسری در `apps/edge/src/counter/counter.do.ts` — Durable Object یکتا، صدور اتمیک `REQ-{n}` با `lastNumber` پایدار (R-03، FR-016)
+- [x] T032 [US1] ✅ **آزمون الزامی ۲ — یکتایی شماره پس از بازراه‌اندازی** در `apps/edge/tests/resilience/v7-counter-uniqueness.test.ts`؛ سناریوی **V-7**: چند ثبت هم‌زمان به‌علاوهٔ بازراه‌اندازی شبیه‌سازی‌شدهٔ لبه MUST نه شمارهٔ تکراری بدهد نه شکاف پرش‌دار
 - [ ] T033 [US1] بررسی عضویت در `apps/edge/src/access/membership.ts` — نگاشت **قطعیِ** تأییدشده در [S-1](./spikes/S-1-channel-membership.md): `creator`/`administrator`/`member` → مجاز · `left`/`kicked`/`restricted` و `400 member not found` → رد · `429`/`5xx`/خطای شبکه/timeout → **نامعلوم**، مسیر جداگانه با سقوط به استثنای T029 و **هرگز تفسیر به «رد»**؛ کش کوتاه‌مدت در Durable Object کاربر **فقط برای دو حالت قطعی** — حالت «نامعلوم» MUST NOT کش شود (R-05، FR-001)
-- [ ] T034 [US1] سه مجموعه پرسش در `apps/edge/src/conversation/questions.ts` — خرابی (FR-006)، بهبود (FR-007)، ایده (FR-008)، به‌علاوهٔ پرسش متناسب با واحد سازمانی (FR-009)؛ همه فارسی، با گزینهٔ از پیش تعریف‌شده هرجا مجموعهٔ پاسخ محدود است (FR-010) و **بدون هیچ پرسش تخصصی** (FR-012)
-- [ ] T035 [US1] ماشین حالت در `apps/edge/src/conversation/state-machine.ts` — گذارهای `idle → askUnit?* → askType → askQ1..Qn → askRoleQ → askAttachment → confirm → submitted`؛ `askUnit` فقط وقتی `unit` خالی است (FR-003)
-- [ ] T036 [US1] شیء گفت‌وگو در `apps/edge/src/conversation/conversation.do.ts` — نگه‌داشت `ConversationState`، انقضای ۲۴ ساعتِ بی‌فعالیتی با انتخاب ادامه یا شروع تازه (FR-013)، دستور لغو، و **تأیید گرفتن** هنگام شروع ثبت تازه وسط گفت‌وگوی باز
-- [ ] T037 [US1] ✅ **آزمون الزامی ۴ — بقای گفت‌وگوی نیمه‌تمام** در `apps/edge/tests/resilience/v6-conversation-survival.test.ts`؛ سناریوی **V-6**: بازراه‌اندازی لبه وسط سوال سوم MUST کاربر را از **همان سوال** ادامه دهد
+- [x] T034 [US1] سه مجموعه پرسش در `apps/edge/src/conversation/questions.ts` — خرابی (FR-006)، بهبود (FR-007)، ایده (FR-008)، به‌علاوهٔ پرسش متناسب با واحد سازمانی (FR-009)؛ همه فارسی، با گزینهٔ از پیش تعریف‌شده هرجا مجموعهٔ پاسخ محدود است (FR-010) و **بدون هیچ پرسش تخصصی** (FR-012)
+- [x] T035 [US1] ماشین حالت در `apps/edge/src/conversation/state-machine.ts` — گذارهای `idle → askUnit?* → askType → askQ1..Qn → askRoleQ → askAttachment → confirm → submitted`؛ `askUnit` فقط وقتی `unit` خالی است (FR-003)
+- [x] T036 [US1] شیء گفت‌وگو در `apps/edge/src/conversation/conversation.do.ts` — نگه‌داشت `ConversationState`، انقضای ۲۴ ساعتِ بی‌فعالیتی با انتخاب ادامه یا شروع تازه (FR-013)، دستور لغو، و **تأیید گرفتن** هنگام شروع ثبت تازه وسط گفت‌وگوی باز
+- [x] T037 [US1] ✅ **آزمون الزامی ۴ — بقای گفت‌وگوی نیمه‌تمام** در `apps/edge/tests/resilience/v6-conversation-survival.test.ts`؛ سناریوی **V-6**: بازراه‌اندازی لبه وسط سوال سوم MUST کاربر را از **همان سوال** ادامه دهد
 - [ ] T038 [US1] پیوست اختیاری در `apps/edge/src/conversation/attachments.ts` — تصویر، فایل و پیوند؛ پیوست بزرگ یا نامعتبر پیام روشن می‌گیرد و **ثبت بدون پیوست کامل می‌شود** (FR-011)
 - [ ] T039 [US1] آداپتور مقصد در `apps/edge/src/telegram/adapter.ts` و رجیستری در `apps/edge/src/telegram/registry.ts` — الگوی بازاستفاده‌شده از Campaign Studio؛ منطق ثبت MUST به تلگرام گره نخورد (R-13)
 - [ ] T040 [US1] مسیریاب webhook در `apps/edge/src/webhook/router.ts` — اتصال ورودی راستی‌آزمایی‌شدهٔ T022 به شیء گفت‌وگوی کاربر
