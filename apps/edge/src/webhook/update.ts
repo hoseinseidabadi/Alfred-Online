@@ -57,7 +57,7 @@ export interface TelegramUpdate {
 }
 
 /** دستورهایی که سامانه می‌شناسد. */
-export type Command = 'start' | 'cancel' | 'help';
+export type Command = 'start' | 'cancel' | 'help' | 'inbox';
 
 export type ParsedUpdate =
   | { kind: 'command'; command: Command; actor: Actor }
@@ -89,6 +89,7 @@ const COMMANDS: Record<string, Command> = {
   '/start': 'start',
   '/cancel': 'cancel',
   '/help': 'help',
+  '/inbox': 'inbox',
 };
 
 /** الگوی شمارهٔ پیگیری در متن آزاد. */

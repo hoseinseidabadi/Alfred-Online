@@ -17,6 +17,15 @@ import {
   start,
 } from './state-machine';
 import type { Question } from './questions';
+import {
+  type DeskState,
+  type DeskStep,
+  beginReply,
+  idleDesk,
+  withOutcome,
+  withText,
+} from '../triage/session';
+import type { TriageOutcome } from '@alfred-online/contracts';
 
 /**
  * حالت گفت‌وگوی هر کاربر — R-02، FR-013، FR-014.
@@ -43,6 +52,14 @@ const STATE_KEY = 'conversation';
  * دوباره همان سوال را می‌گرفت.
  */
 const UNIT_KEY = 'unit';
+
+/**
+ * کلید حالت میز تریاژ — **جدا از حالت ثبت**.
+ *
+ * مدیر محصول هم ثبت‌کننده است. اگر یک کلید مشترک بود، پاسخ دادن به یک خرابی
+ * وسط ثبتِ خودش آن ثبت را نابود می‌کرد.
+ */
+const DESK_KEY = 'desk';
 
 export interface ConversationSnapshot {
   state: ConversationState;
@@ -145,6 +162,38 @@ export class ConversationDO extends DurableObject<Env> {
     const cached = await this.ctx.storage.get<{ ok: boolean; expiresAt: number }>('membership');
     if (cached === undefined || cached.expiresAt <= now) return null;
     return cached.ok;
+  }
+
+  // ── میز تریاژ ─────────────────────────────────────────────────────────────
+
+  async deskSnapshot(): Promise<DeskState> {
+    return (await this.ctx.storage.get<DeskState>(DESK_KEY)) ?? idleDesk();
+  }
+
+  async deskBeginReply(requestId: string, now: number = Date.now()): Promise<DeskState> {
+    const next = beginReply(requestId, now);
+    await this.ctx.storage.put(DESK_KEY, next);
+    return next;
+  }
+
+  async deskChooseOutcome(outcome: TriageOutcome): Promise<DeskState> {
+    const next = withOutcome(await this.deskSnapshot(), outcome);
+    await this.ctx.storage.put(DESK_KEY, next);
+    return next;
+  }
+
+  async deskAnswer(text: string): Promise<DeskState> {
+    const next = withText(await this.deskSnapshot(), text);
+    await this.ctx.storage.put(DESK_KEY, next);
+    return next;
+  }
+
+  async deskReset(now: number = Date.now()): Promise<void> {
+    await this.ctx.storage.put(DESK_KEY, idleDesk(now));
+  }
+
+  async deskStep(): Promise<DeskStep> {
+    return (await this.deskSnapshot()).step;
   }
 
   // ── ذخیره‌سازی ────────────────────────────────────────────────────────────

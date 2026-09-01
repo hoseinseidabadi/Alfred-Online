@@ -41,12 +41,40 @@ let migrated = false;
  */
 export function applyMigrations(): void {
   if (migrated || testDatabaseUrl === null) return;
-  execFileSync(process.execPath, [prismaCliPath(), 'migrate', 'deploy'], {
-    cwd: CORE_ROOT,
-    env: { ...process.env, DATABASE_URL: testDatabaseUrl },
-    stdio: 'pipe',
-  });
+  try {
+    execFileSync(process.execPath, [prismaCliPath(), 'migrate', 'deploy'], {
+      cwd: CORE_ROOT,
+      env: { ...process.env, DATABASE_URL: testDatabaseUrl },
+      stdio: 'pipe',
+    });
+  } catch (error) {
+    throw new Error(describeMigrationFailure(error), { cause: error });
+  }
   migrated = true;
+}
+
+/**
+ * خطای خام پرایزما را به چیزی تبدیل می‌کند که بشود روی آن عمل کرد.
+ *
+ * چرا لازم است: دو بار مجموعهٔ آزمون بی‌دلیل قرمز شد و هر بار وقت رفت تا معلوم
+ * شود **داکر دسکتاپ خودش بسته شده** و کانتینر Postgres با آن رفته. خروجی خام
+ * فقط `P1001: Can't reach database server` بود و Vitest هم آزمون‌ها را
+ * «skipped» گزارش می‌کرد — ترکیبی که کاملاً گمراه‌کننده است.
+ */
+function describeMigrationFailure(error: unknown): string {
+  const raw = error instanceof Error ? `${error.message}` : String(error);
+  if (raw.includes('P1001') || raw.includes("Can't reach database server")) {
+    return [
+      'پایگاه دادهٔ آزمون در دسترس نیست.',
+      '',
+      'محتمل‌ترین علت: داکر دسکتاپ بسته شده و کانتینر Postgres با آن رفته.',
+      '',
+      'راه‌حل: داکر دسکتاپ را باز کن، بعد `docker compose up -d` را بزن.',
+      '',
+      `نشانی: ${testDatabaseUrl}`,
+    ].join('\n');
+  }
+  return `اجرای مهاجرت روی پایگاه دادهٔ آزمون شکست خورد:\n${raw}`;
 }
 
 /**

@@ -4,7 +4,10 @@ import { messages, questionMessage } from '../conversation/messages';
 import { isAwaitingAttachment, isComplete } from '../conversation/state-machine';
 import type { Env } from '../env';
 import { completeSubmission } from '../submission/complete';
+import { findSubmission } from '../submission/store';
 import { describeStatus } from '../submission/status';
+import { deskMessages, isProductManager } from '../triage/desk';
+import * as desk from '../triage/router';
 import type { DestinationAdapter } from '../telegram/adapter';
 import {
   type Actor,
@@ -55,6 +58,14 @@ async function route(update: Exclude<ParsedUpdate, { kind: 'ignored' }>, deps: R
     return;
   }
 
+  // میز تریاژ **پیش از** جریان ثبت بررسی می‌شود.
+  //
+  // مدیر محصول هم ثبت‌کننده است؛ اگر ترتیب برعکس بود، متنی که برای پاسخ
+  // می‌نویسد به‌عنوان جواب یک پرسشِ ثبت تفسیر می‌شد.
+  if (isProductManager(actor.chatId, deps.env)) {
+    if (await routeDesk(update, actor, deps)) return;
+  }
+
   switch (update.kind) {
     case 'command':
       return handleCommand(update.command, actor, deps);
@@ -65,6 +76,56 @@ async function route(update: Exclude<ParsedUpdate, { kind: 'ignored' }>, deps: R
     case 'statusQuery':
       return handleStatusQuery(update.requestId, actor, deps);
   }
+}
+
+/**
+ * مسیریابی میز تریاژ. `true` یعنی این بروزرسانی مصرف شد.
+ *
+ * فقط برای مدیر محصول صدا زده می‌شود — بررسی دسترسی در `route` انجام شده.
+ */
+async function routeDesk(
+  update: Exclude<ParsedUpdate, { kind: 'ignored' }>,
+  actor: Actor,
+  deps: RouterDeps,
+): Promise<boolean> {
+  const deskDeps = { env: deps.env, adapter: deps.adapter, now: deps.now };
+
+  if (update.kind === 'command' && update.command === 'inbox') {
+    await desk.showInbox(deskDeps, actor, null);
+    return true;
+  }
+
+  if (update.kind === 'answer') {
+    const value = update.value;
+
+    const reply = /^__reply:(.+)$/.exec(value);
+    if (reply?.[1] !== undefined) {
+      await desk.beginReply(deskDeps, actor, reply[1]);
+      return true;
+    }
+
+    if (value.startsWith('__outcome:')) {
+      await desk.chooseOutcome(deskDeps, actor, value);
+      return true;
+    }
+
+    if (value === '__desk_cancel') {
+      await desk.cancelReply(deskDeps, actor);
+      return true;
+    }
+
+    const inbox = /^__inbox:(bug|improvement|idea|all)$/.exec(value);
+    if (inbox?.[1] !== undefined) {
+      const filter = inbox[1] === 'all' ? null : (inbox[1] as 'bug' | 'improvement' | 'idea');
+      await desk.showInbox(deskDeps, actor, filter);
+      return true;
+    }
+
+    // متن آزاد وسط جریان پاسخ — میز خودش تصمیم می‌گیرد مصرفش کند یا نه.
+    return desk.handleDeskText(deskDeps, actor, value);
+  }
+
+  return false;
 }
 
 // ── دسترسی ──────────────────────────────────────────────────────────────────
@@ -91,14 +152,27 @@ async function ensureAccess(deps: RouterDeps, actor: Actor): Promise<AccessOutco
 // ── دستورها ─────────────────────────────────────────────────────────────────
 
 async function handleCommand(
-  command: 'start' | 'cancel' | 'help',
+  command: 'start' | 'cancel' | 'help' | 'inbox',
   actor: Actor,
   deps: RouterDeps,
 ): Promise<void> {
   const conversation = conversationFor(deps.env, actor.chatId);
   const now = (deps.now ?? Date.now)();
 
-  if (command === 'help') return say(deps, actor, messages.help);
+  if (command === 'inbox') {
+    // برای غیرمدیر، `/inbox` اصلاً وجود ندارد — نه پیام خطا، نه اشاره‌ای که
+    // چنین چیزی هست. راهنمای عادی داده می‌شود.
+    return say(deps, actor, messages.help);
+  }
+
+  if (command === 'help') {
+    const text = isProductManager(actor.chatId, deps.env)
+      ? `${messages.help}
+
+${deskMessages.deskHelp}`
+      : messages.help;
+    return say(deps, actor, text);
+  }
 
   if (command === 'cancel') {
     await conversation.abandon(now);
@@ -206,7 +280,7 @@ async function finish(actor: Actor, deps: RouterDeps): Promise<void> {
     return askNext(deps, actor, question);
   }
 
-  const { confirmationText } = await completeSubmission(deps.env, {
+  const { requestId, confirmationText } = await completeSubmission(deps.env, {
     chatId: actor.chatId,
     submitterName: actor.displayName,
     unit: state.unit,
@@ -218,6 +292,15 @@ async function finish(actor: Actor, deps: RouterDeps): Promise<void> {
 
   await conversation.markSubmitted(now);
   await say(deps, actor, confirmationText);
+
+  // اعلان به مدیر محصول — **پس از** تأیید به ثبت‌کننده.
+  //
+  // ترتیب مهم است: اگر اعلان اول بود و شکست می‌خورد، ثبت‌کننده دیرتر شماره‌اش
+  // را می‌دید. تعهد ما به اوست، نه به میز تریاژ.
+  const submission = await findSubmission(deps.env.DB, requestId);
+  if (submission !== null) {
+    await desk.notifyNewBug({ env: deps.env, adapter: deps.adapter, now: deps.now }, submission);
+  }
 }
 
 // ── کمکی ────────────────────────────────────────────────────────────────────
