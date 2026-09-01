@@ -70,7 +70,7 @@ describe('V-3 — غیرعضو', () => {
 
     await send('/start');
 
-    expect(adapter.lastText).toContain('عضو کانال');
+    expect(adapter.lastText).toContain('پشتیبانی برسا');
     expect(adapter.lastText).toContain('واحد محصول');
     expect(await pendingCount(env.DB)).toBe(0);
   });
@@ -91,7 +91,7 @@ describe('V-3 — غیرعضو', () => {
   it('حتی /help هم برای غیرعضو باز نیست', async () => {
     notMember();
     await send('/help');
-    expect(adapter.lastText).toContain('عضو کانال');
+    expect(adapter.lastText).toContain('پشتیبانی برسا');
   });
 
   it('وقتی تلگرام خراب است، به کاربر گفته نمی‌شود «عضو نیستی»', async () => {
@@ -102,7 +102,7 @@ describe('V-3 — غیرعضو', () => {
 
     await send('/start');
 
-    expect(adapter.lastText).not.toContain('عضو کانال اطلاع‌رسانی محصول باشی');
+    expect(adapter.lastText).not.toContain('پشتیبانی برسا');
     expect(adapter.lastText).toContain('نمی‌توانم عضویتت را بررسی کنم');
   });
 
