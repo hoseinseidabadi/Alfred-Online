@@ -174,9 +174,27 @@ export function skipAttachments(state: ConversationState, now = Date.now()): Con
   return { ...state, step: 'confirm', lastActivityAt: now };
 }
 
-/** ثبت را نهایی می‌کند. */
+/**
+ * ثبت را نهایی می‌کند و **حالت را پاک می‌کند**.
+ *
+ * پاک کردن حیاتی است: نسخهٔ اول پاسخ‌ها را نگه می‌داشت، پس `isComplete` پس از
+ * ثبت هم `true` می‌ماند و یک «تمام» تصادفی همان پاسخ‌ها را دوباره ثبت می‌کرد.
+ * کاربر در تست واقعی دقیقاً همین را دید: یک درخواست بی‌ربط با محتوای ثبت قبلی.
+ *
+ * واحد سازمانی می‌ماند — از عمر گفت‌وگو بلندتر است (FR-003).
+ */
 export function confirm(state: ConversationState, now = Date.now()): ConversationState {
-  return { ...state, step: 'submitted', lastActivityAt: now };
+  return { ...initialState(state.unit, now), step: 'submitted' };
+}
+
+/**
+ * آیا گفت‌وگو در گام پیوست است.
+ *
+ * تنها حالتی که «تمام» معنا دارد. بدون این بررسی، «تمام» در هر لحظه‌ای ثبت را
+ * تمام‌شده اعلام می‌کرد.
+ */
+export function isAwaitingAttachment(state: ConversationState): boolean {
+  return state.step === 'askAttachment';
 }
 
 /** گفت‌وگو را بدون ثبت پایان می‌دهد — سناریوی پذیرش ۷ در US1. */

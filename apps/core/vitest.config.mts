@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
@@ -19,6 +19,26 @@ import { defineConfig } from 'vitest/config';
 const coreRoot = import.meta.dirname;
 const envFile = resolve(coreRoot, '.env');
 if (existsSync(envFile)) process.loadEnvFile(envFile);
+
+/**
+ * اگر `.env` هست و `TEST_DATABASE_URL` را تعریف کرده ولی بارگذاری نشده، یعنی
+ * چیزی در خواندن محیط خراب شده — نه اینکه دولوپر پایگاه داده ندارد.
+ *
+ * چرا این بررسی وجود دارد: یک بار در دنبالهٔ `verify` ده آزمون یکپارچه بی‌صدا
+ * skip شدند و نتوانستم بازتولیدش کنم. تفاوت «دیتابیس ندارم» و «دیتابیس دارم
+ * ولی محیط بار نشد» از بیرون دیده نمی‌شد. حالا دومی صریح می‌شکند به‌جای
+ * اینکه به‌صورت skip بی‌صدا رد شود.
+ */
+if (existsSync(envFile)) {
+  const declared = readFileSync(envFile, 'utf8').includes('TEST_DATABASE_URL=');
+  const loaded = (process.env.TEST_DATABASE_URL ?? '').length > 0;
+  if (declared && !loaded) {
+    throw new Error(
+      `TEST_DATABASE_URL در ${envFile} تعریف شده ولی بار نشد.\n` +
+        'آزمون‌های یکپارچه بی‌صدا رد می‌شدند — این خطا عمدی است تا آن سکوت تکرار نشود.',
+    );
+  }
+}
 
 export default defineConfig({
   test: {

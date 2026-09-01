@@ -1,9 +1,10 @@
 import { checkMembership, MEMBERSHIP_CACHE_TTL_MS } from '../access/membership';
 import type { ConversationDO } from '../conversation/conversation.do';
 import { messages, questionMessage } from '../conversation/messages';
-import { isComplete } from '../conversation/state-machine';
+import { isAwaitingAttachment, isComplete } from '../conversation/state-machine';
 import type { Env } from '../env';
 import { completeSubmission } from '../submission/complete';
+import { describeStatus } from '../submission/status';
 import type { DestinationAdapter } from '../telegram/adapter';
 import {
   type Actor,
@@ -62,8 +63,7 @@ async function route(update: Exclude<ParsedUpdate, { kind: 'ignored' }>, deps: R
     case 'attachment':
       return handleAttachment(update.attachment, actor, deps);
     case 'statusQuery':
-      // FR-035 — پیاده‌سازی کاملش در T067 که به هسته نیاز دارد.
-      return say(deps, actor, messages.notFound);
+      return handleStatusQuery(update.requestId, actor, deps);
   }
 }
 
@@ -136,12 +136,28 @@ async function handleAnswer(value: string, actor: Actor, deps: RouterDeps): Prom
   if (value === '__restart') {
     return askNext(deps, actor, await conversation.restart(now));
   }
+  if (value === '__begin') {
+    return handleCommand('start', actor, deps);
+  }
+  if (value === '__cancel') {
+    return handleCommand('cancel', actor, deps);
+  }
   if (value === '__done') {
+    // «تمام» فقط در گام پیوست معنا دارد. بدون این بررسی، یک «تمام» تصادفی
+    // ثبت را تمام‌شده اعلام می‌کرد — همان چیزی که کاربر در تست واقعی دید.
+    const { state } = await conversation.snapshot(now);
+    if (!isAwaitingAttachment(state))
+      return say(deps, actor, messages.idleHint, messages.startChoices);
     return finish(actor, deps);
   }
 
   const result = await conversation.submitAnswer(value, now);
   if (!result.ok) {
+    // «هیچ پرسشی مطرح نیست» با «جوابت خالی بود» یکی نیست. قاطی کردنشان کاربر
+    // را در تست واقعی به بن‌بست برد: پیام گیج‌کننده گرفت و بعد پرسش پیوست.
+    if (result.reason === 'not_asking') {
+      return say(deps, actor, messages.idleHint, messages.startChoices);
+    }
     const complaint =
       result.reason === 'invalid_choice' ? messages.invalidChoice : messages.emptyAnswer;
     await say(deps, actor, complaint);
@@ -149,11 +165,10 @@ async function handleAnswer(value: string, actor: Actor, deps: RouterDeps): Prom
     return askNext(deps, actor, question);
   }
 
-  const { question } = await conversation.snapshot(now);
+  const { question, state } = await conversation.snapshot(now);
   if (question !== null) return askNext(deps, actor, question);
-
-  // پرسش‌ها تمام شد — نوبت پیوست اختیاری.
-  return say(deps, actor, messages.attachmentPrompt, messages.attachmentChoices);
+  if (isAwaitingAttachment(state)) return promptAttachments(deps, actor);
+  return say(deps, actor, messages.idleHint, messages.startChoices);
 }
 
 // ── پیوست — T038، FR-011 ────────────────────────────────────────────────────
@@ -182,6 +197,9 @@ async function finish(actor: Actor, deps: RouterDeps): Promise<void> {
   const now = (deps.now ?? Date.now)();
   const { state } = await conversation.snapshot(now);
 
+  if (!isAwaitingAttachment(state)) {
+    return say(deps, actor, messages.idleHint, messages.startChoices);
+  }
   if (!isComplete(state) || state.unit === undefined || state.requestType === undefined) {
     // نباید رخ دهد، ولی ثبت ناقص به هسته نمی‌رود.
     const { question } = await conversation.snapshot(now);
@@ -215,11 +233,12 @@ async function askNext(
   actor: Actor,
   question: Parameters<typeof questionMessage>[0] | null,
 ): Promise<void> {
-  if (question === null) {
-    return say(deps, actor, messages.attachmentPrompt, messages.attachmentChoices);
-  }
+  // سقوط به پرسش پیوست حذف شد: «پرسشی نمانده» با «نوبت پیوست است» یکی نیست،
+  // و قاطی کردنشان همان باگی بود که ثبت بی‌ربط می‌ساخت. تصمیم با فراخواننده است.
+  if (question === null) return promptAttachments(deps, actor);
   const { text, choices } = questionMessage(question);
-  return say(deps, actor, text, choices);
+  // دکمهٔ لغو کنار هر پرسش — کاربر نباید دستور /cancel را حفظ باشد.
+  return say(deps, actor, text, [...(choices ?? []), messages.cancelChoice]);
 }
 
 async function say(
@@ -229,4 +248,23 @@ async function say(
   choices?: readonly { value: string; label: string }[],
 ): Promise<void> {
   await deps.adapter.send({ recipient: actor.chatId, text, choices });
+}
+
+/** پرسش پیوست — تنها جایی که «تمام» معنا دارد. */
+async function promptAttachments(deps: RouterDeps, actor: Actor): Promise<void> {
+  return say(deps, actor, messages.attachmentPrompt, [
+    ...messages.attachmentChoices,
+    messages.cancelChoice,
+  ]);
+}
+
+/**
+ * استعلام وضعیت با شمارهٔ پیگیری — FR-035.
+ *
+ * لبه خودش جواب می‌دهد و منتظر هسته نمی‌ماند (اصل III). در قطعی، کسی که
+ * شمارهٔ پیگیری در دست دارد نباید بشنود «پیدا نکردم».
+ */
+async function handleStatusQuery(requestId: string, actor: Actor, deps: RouterDeps): Promise<void> {
+  const status = await describeStatus(deps.env, requestId, actor.chatId, (deps.now ?? Date.now)());
+  return say(deps, actor, status ?? messages.notFound);
 }
