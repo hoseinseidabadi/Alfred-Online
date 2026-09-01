@@ -78,12 +78,17 @@ describe.skipIf(!hasTestDatabase)('قرارداد پل — POST /bridge/submissi
     expect(stored.rawAnswers).toEqual(input.rawAnswers);
   });
 
-  it('مهلت هفت‌روزه را خودش حساب می‌کند، نه لبه', async () => {
+  it('مهلت را خودش حساب می‌کند، نه لبه — و به تفکیک نوع', async () => {
+    // نمونهٔ پیش‌فرض `bug` است: تعهد سه روزه.
     await requests.accept(submission());
-    const stored = await prisma.request.findUniqueOrThrow({ where: { id: 'REQ-149' } });
+    const bug = await prisma.request.findUniqueOrThrow({ where: { id: 'REQ-149' } });
+    expect(bug.submittedAt.toISOString()).toBe('2026-08-24T06:44:00.000Z');
+    expect(bug.responseDueAt.toISOString()).toBe('2026-08-27T06:44:00.000Z');
 
-    expect(stored.submittedAt.toISOString()).toBe('2026-08-24T06:44:00.000Z');
-    expect(stored.responseDueAt.toISOString()).toBe('2026-08-31T06:44:00.000Z');
+    // همان لحظهٔ ثبت، نوع دیگر: تعهد هفت روزه.
+    await requests.accept(submission({ requestId: 'REQ-150', requestType: 'idea' }));
+    const idea = await prisma.request.findUniqueOrThrow({ where: { id: 'REQ-150' } });
+    expect(idea.responseDueAt.toISOString()).toBe('2026-08-31T06:44:00.000Z');
   });
 
   it('حدس اولیهٔ ثبت‌کننده جدا نگه داشته می‌شود', async () => {

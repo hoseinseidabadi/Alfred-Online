@@ -1,5 +1,5 @@
 import { addDays, formatJalaliDateTime } from '@alfred-online/jalali';
-import type { RequestType, Unit } from '@alfred-online/contracts';
+import { type RequestType, type Unit, commitmentDaysFor } from '@alfred-online/contracts';
 import type { Attachment } from '../conversation/state-machine';
 import { counterStub } from '../counter/counter.do';
 import type { Env } from '../env';
@@ -20,9 +20,6 @@ import { persistSubmission } from './store';
  *
  * **هیچ‌جای این مسیر تماسی با هسته نیست.** تحویل کار Cron است (T043، T044).
  */
-
-/** تعهد پاسخ — همان عددی که هسته هم با آن `responseDueAt` را حساب می‌کند. */
-const RESPONSE_COMMITMENT_DAYS = 7;
 
 export interface CompleteSubmissionInput {
   chatId: string;
@@ -72,7 +69,7 @@ export async function completeSubmission(
   return {
     requestId,
     submittedAt,
-    confirmationText: confirmationMessage(requestId, submittedAt),
+    confirmationText: confirmationMessage(requestId, submittedAt, input.requestType),
   };
 }
 
@@ -83,8 +80,12 @@ export async function completeSubmission(
  * لحن» قانون اساسی. شمارهٔ پیگیری عمداً لاتین می‌ماند: آدم‌ها آن را در جلسه
  * به زبان می‌آورند و در جست‌وجو تایپش می‌کنند.
  */
-export function confirmationMessage(requestId: string, submittedAt: number): string {
-  const dueAt = addDays(new Date(submittedAt), RESPONSE_COMMITMENT_DAYS);
+export function confirmationMessage(
+  requestId: string,
+  submittedAt: number,
+  type: RequestType,
+): string {
+  const dueAt = addDays(new Date(submittedAt), commitmentDaysFor(type));
   return [
     `ثبت شد ✅`,
     ``,

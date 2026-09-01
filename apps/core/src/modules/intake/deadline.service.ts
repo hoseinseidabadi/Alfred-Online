@@ -1,4 +1,5 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
+import { type RequestType, commitmentDaysFor } from '@alfred-online/contracts';
 import { addDays } from '@alfred-online/jalali';
 
 /**
@@ -13,8 +14,12 @@ import { addDays } from '@alfred-online/jalali';
  * مهلت هفت‌روزه ناوردای سامانه است، نه یادداشتی روی دیوار.
  */
 
-/** تعهد هفت‌روزه — از منشور P-06 و اصل IV. */
-export const RESPONSE_COMMITMENT_DAYS = 7;
+/**
+ * تعهد پاسخ به تفکیک نوع، از `@alfred-online/contracts` می‌آید — یک عدد،
+ * یک جا. لبه همان را برای پیام تأیید می‌خواند تا قولِ گفته‌شده به کاربر و
+ * مهلتِ ذخیره‌شده در هسته هرگز واگرا نشوند.
+ */
+export { RESPONSE_COMMITMENT_DAYS, commitmentDaysFor } from '@alfred-online/contracts';
 
 /**
  * چند روز مانده به مهلت، درخواست «در معرض نقض» علامت می‌خورد.
@@ -49,13 +54,13 @@ export class DeadlineService {
   }
 
   /**
-   * مهلت پاسخ را از زمان ثبت مشتق می‌کند.
+   * مهلت پاسخ را از زمان ثبت و **نوع درخواست** مشتق می‌کند.
    *
    * **مطلق است، نه تقویمی**: هفت روز یعنی ۱۶۸ ساعت، نه «هفت بار عوض شدن تاریخ
    * تهران». قرارداد bridge-api هم همین را می‌گوید: `submittedAt + 7d`.
    */
-  dueAt(submittedAt: Date): Date {
-    return addDays(submittedAt, RESPONSE_COMMITMENT_DAYS);
+  dueAt(submittedAt: Date, type: RequestType): Date {
+    return addDays(submittedAt, commitmentDaysFor(type));
   }
 
   /** چند روز کامل تا مهلت مانده. منفی یعنی تعهد نقض شده. */
@@ -82,8 +87,8 @@ export class DeadlineService {
   }
 
   /** هر سه مقدارِ رو به تریاژ، یک‌جا. */
-  status(submittedAt: Date, now: Date = this.clock.now()) {
-    const responseDueAt = this.dueAt(submittedAt);
+  status(submittedAt: Date, type: RequestType, now: Date = this.clock.now()) {
+    const responseDueAt = this.dueAt(submittedAt, type);
     return {
       responseDueAt,
       daysRemaining: this.daysRemaining(responseDueAt, now),

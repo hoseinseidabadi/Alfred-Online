@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { MAX_RESPONSE_COMMITMENT_DAYS, RESPONSE_COMMITMENT_DAYS } from '@alfred-online/contracts';
 import {
   AT_RISK_THRESHOLD_DAYS,
   type Clock,
   DeadlineService,
-  RESPONSE_COMMITMENT_DAYS,
 } from '../../src/modules/intake/deadline.service';
 
 /**
@@ -31,16 +31,41 @@ const SUBMITTED = '2026-08-24T06:44:00Z';
 const DUE = '2026-08-31T06:44:00.000Z';
 
 describe('✅ آزمون الزامی ۵ — هشدار پیش از نقض تعهد (V-8)', () => {
-  it('مهلت دقیقاً هفت روز پس از ثبت است', () => {
+  it('مهلت ایده و بهبود هفت روز پس از ثبت است', () => {
     const service = new DeadlineService(frozenAt(SUBMITTED));
-    expect(service.dueAt(new Date(SUBMITTED)).toISOString()).toBe(DUE);
-    expect(RESPONSE_COMMITMENT_DAYS).toBe(7);
+    expect(service.dueAt(new Date(SUBMITTED), 'idea').toISOString()).toBe(DUE);
+    expect(service.dueAt(new Date(SUBMITTED), 'improvement').toISOString()).toBe(DUE);
+  });
+
+  it('مهلت خرابی سه روز است — تعهد کوتاه‌تر، نه ناقض ناوردا', () => {
+    // اصل IV می‌گوید «حداکثر ظرف هفت روز». هفت سقف است نه هدف، پس تعهد
+    // کوتاه‌تر سخت‌گیرانه‌تر از ناوردا است.
+    const service = new DeadlineService(frozenAt(SUBMITTED));
+    expect(service.dueAt(new Date(SUBMITTED), 'bug').toISOString()).toBe(
+      '2026-08-27T06:44:00.000Z',
+    );
+  });
+
+  it('هیچ تعهدی از سقف قانون اساسی بیشتر نیست', () => {
+    // اگر روزی کسی عددی بزرگ‌تر از هفت بگذارد، اینجا می‌شکند — نه در تولید.
+    for (const days of Object.values(RESPONSE_COMMITMENT_DAYS)) {
+      expect(days).toBeLessThanOrEqual(MAX_RESPONSE_COMMITMENT_DAYS);
+      expect(days).toBeGreaterThan(0);
+    }
+  });
+
+  it('خرابی زودتر از ایده به هشدار می‌رسد', () => {
+    // همان لحظه، همان زمان ثبت — فقط نوع فرق می‌کند.
+    const twoDaysIn = new DeadlineService(frozenAt('2026-08-26T06:44:00Z'));
+    const submitted = new Date(SUBMITTED);
+    expect(twoDaysIn.status(submitted, 'bug').atRisk).toBe(true);
+    expect(twoDaysIn.status(submitted, 'idea').atRisk).toBe(false);
   });
 
   it('سناریوی V-8 — ثبتِ شش روز پیش، پیش از روز هفتم atRisk است', () => {
     // شش روز از ثبت گذشته؛ یک روز تا مهلت مانده.
     const service = new DeadlineService(frozenAt('2026-08-30T06:44:00Z'));
-    const status = service.status(new Date(SUBMITTED));
+    const status = service.status(new Date(SUBMITTED), 'idea');
 
     expect(status.daysRemaining).toBe(1);
     expect(status.atRisk).toBe(true);
@@ -50,7 +75,7 @@ describe('✅ آزمون الزامی ۵ — هشدار پیش از نقض تع�
 
   it('روز پنجم هنوز هشدار نمی‌دهد — هشدار زودهنگام هم بی‌معناست', () => {
     const service = new DeadlineService(frozenAt('2026-08-28T06:44:00Z'));
-    const status = service.status(new Date(SUBMITTED));
+    const status = service.status(new Date(SUBMITTED), 'idea');
     expect(status.daysRemaining).toBe(3);
     expect(status.atRisk).toBe(false);
   });

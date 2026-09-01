@@ -79,7 +79,7 @@ export class RequestService {
           rawAnswers: submission.rawAnswers as unknown as Prisma.InputJsonValue,
           attachments: submission.attachments as unknown as Prisma.InputJsonValue,
           submittedAt,
-          responseDueAt: this.deadlines.dueAt(submittedAt),
+          responseDueAt: this.deadlines.dueAt(submittedAt, submission.requestType),
           source: 'bot',
         },
       });

@@ -1,3 +1,4 @@
+import { commitmentDaysFor } from '@alfred-online/contracts';
 import { addDays, formatJalaliDateTime, toPersianDigits } from '@alfred-online/jalali';
 import type { Env } from '../env';
 import { findSubmission } from './store';
@@ -15,8 +16,6 @@ import { findSubmission } from './store';
  * می‌آیند و به این پاسخ افزوده می‌شوند.
  */
 
-const RESPONSE_COMMITMENT_DAYS = 7;
-
 /**
  * وضعیت را به فارسی برمی‌گرداند، یا `null` اگر شماره برای این کاربر نباشد.
  *
@@ -32,7 +31,10 @@ export async function describeStatus(
   const submission = await findSubmission(env.DB, requestId);
   if (submission === null || submission.chatId !== chatId) return null;
 
-  const dueAt = addDays(new Date(submission.submittedAt), RESPONSE_COMMITMENT_DAYS);
+  const dueAt = addDays(
+    new Date(submission.submittedAt),
+    commitmentDaysFor(submission.requestType),
+  );
   const daysLeft = Math.floor((dueAt.getTime() - now) / 86_400_000);
 
   const lines = [
