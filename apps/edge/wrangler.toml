@@ -36,4 +36,4 @@ ENVIRONMENT = "development"
 CORE_URL = "http://127.0.0.1:3001"
 
 # اسرار هرگز اینجا نمی‌آیند — فقط `.dev.vars` محلی و Secret Store در استقرار:
-#   TELEGRAM_TOKEN · WEBHOOK_SECRET · BRIDGE_KEY · CORE_URL · CHANNEL_ID
+#   TELEGRAM_TOKEN · WEBHOOK_SECRET · BRIDGE_KEY · CORE_URL · ACCESS_GROUP_ID

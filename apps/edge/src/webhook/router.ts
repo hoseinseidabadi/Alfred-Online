@@ -139,7 +139,11 @@ async function ensureAccess(deps: RouterDeps, actor: Actor): Promise<AccessOutco
   const cached = await conversation.cachedMembership(now);
   if (cached !== null) return cached ? 'allowed' : 'denied';
 
-  const verdict = await checkMembership(deps.env.TELEGRAM_TOKEN, deps.env.CHANNEL_ID, actor.userId);
+  const verdict = await checkMembership(
+    deps.env.TELEGRAM_TOKEN,
+    deps.env.ACCESS_GROUP_ID,
+    actor.userId,
+  );
 
   // «نامعلوم» **کش نمی‌شود** — قید طراحی spike S-1. وگرنه یک قطعی
   // چندثانیه‌ای تلگرام تا انقضای کش کاربر را بیرون نگه می‌دارد.

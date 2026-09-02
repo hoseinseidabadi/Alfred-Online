@@ -31,7 +31,7 @@ export default tseslint.config(
     // اسکریپت‌های ابزاری روی Node اجرا می‌شوند، نه در مرورگر یا Worker.
     files: ['scripts/**/*.mjs', 'apps/*/scripts/**/*.mjs'],
     languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', fetch: 'readonly' },
+      globals: { console: 'readonly', process: 'readonly', fetch: 'readonly', URL: 'readonly' },
     },
   },
 );

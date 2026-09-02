@@ -8,7 +8,7 @@ import {
 
 /**
  * نگاشت این آزمون‌ها **حدس نیست** — از خروجی واقعی spike S-1 می‌آید:
- * `specs/001-request-intake-triage/spikes/S-1-channel-membership.md`
+ * `specs/001-request-intake-triage/spikes/S-1-access-group-membership.md`
  */
 
 const ok = (status: ChatMemberStatus): TelegramResult<ChatMember> => ({

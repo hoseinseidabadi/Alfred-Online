@@ -9,7 +9,7 @@ import {
  * بررسی دسترسی از راه عضویت کانال — R-05، FR-001.
  *
  * نگاشت زیر **حدس نیست**: spike S-1 روی کانال واقعی اجرا شد و هر حالت را
- * سنجید. نتیجه در `specs/001-request-intake-triage/spikes/S-1-channel-membership.md`.
+ * سنجید. نتیجه در `specs/001-request-intake-triage/spikes/S-1-access-group-membership.md`.
  *
  * یافتهٔ تعیین‌کنندهٔ آن spike: کاربر غیرعضو `ok: true` با `status: "left"`
  * می‌گیرد، **نه خطا**. یعنی «این آدم عضو نیست» از «تلگرام الان خراب است»
