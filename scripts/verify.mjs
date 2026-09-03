@@ -33,8 +33,28 @@ async function checkTestDatabase() {
   const port = Number(url.port || 5432);
   const host = url.hostname;
 
-  const reachable = await new Promise((resolve) => {
-    const socket = connect({ host, port, timeout: 3000 });
+  /**
+   * اتصال TCP **کافی نیست**.
+   *
+   * Postgres پورت را پیش از آمادهٔ سرویس شدن باز می‌کند. نسخهٔ اول این تابع
+   * فقط TCP را می‌سنجید و یک بار سبز شد در حالی که پایگاه داده هنوز بالا
+   * می‌آمد — بعد آزمون‌ها وسط اجرا شکستند. دقیقاً همان گیج‌کنندگی‌ای که این
+   * بررسی برای حذفش ساخته شده بود.
+   *
+   * پس تا آماده شدن **صبر می‌کند**، نه اینکه یک بار بپرسد و رد شود.
+   */
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (await acceptsQueries(host, port)) return null;
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  return `${host}:${port}`;
+}
+
+/** یک پرس‌وجوی واقعی، از راه کانتینر — نه فقط دست دادن TCP. */
+async function acceptsQueries(host, port) {
+  const tcp = await new Promise((resolve) => {
+    const socket = connect({ host, port, timeout: 2000 });
     socket.on('connect', () => {
       socket.destroy();
       resolve(true);
@@ -45,8 +65,16 @@ async function checkTestDatabase() {
       resolve(false);
     });
   });
+  if (!tcp) return false;
 
-  return reachable ? null : `${host}:${port}`;
+  // `pg_isready` داخل کانتینر می‌گوید واقعاً آمادهٔ پرس‌وجو هست یا نه.
+  const probe = spawnSync(
+    'docker',
+    ['exec', 'alfred-online-postgres', 'pg_isready', '-U', 'alfred', '-d', 'alfred_online_test'],
+    { stdio: 'ignore', shell: true },
+  );
+  // اگر داکر در دسترس نبود، به همان TCP اکتفا می‌کنیم — بهتر از مسدود کردن.
+  return probe.error !== undefined || probe.status === 0 || probe.status === null;
 }
 
 const unreachable = await checkTestDatabase();

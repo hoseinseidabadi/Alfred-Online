@@ -45,11 +45,13 @@ export function interpretMembership(result: TelegramResult<ChatMember>): Members
         ? { access: 'allowed', status: result.result.status }
         : { access: 'denied', reason: `وضعیت عضویت: ${result.result.status}` };
 
-    case 'rejected':
-      // `400 member not found` یعنی این شناسه در کانال نیست — پاسخ منفیِ
-      // قطعی است، نه خرابی. بقیهٔ ۴xx هم (ربات ادمین نیست، کانال اشتباه)
-      // نباید به «عضو است» تفسیر شوند.
-      return { access: 'denied', reason: `${result.errorCode}: ${result.description}` };
+    case 'rejected': {
+      const reason = `${result.errorCode}: ${result.description}`;
+      // خرابی پیکربندی **ما** با «این آدم عضو نیست» یکی نیست.
+      return isOurConfigurationBroken(result.errorCode, result.description)
+        ? { access: 'unknown', reason }
+        : { access: 'denied', reason };
+    }
 
     case 'unavailable':
       return {
@@ -89,4 +91,32 @@ export const MEMBERSHIP_CACHE_TTL_MS = 10 * 60 * 1000;
  */
 export function isCacheable(verdict: MembershipVerdict): boolean {
   return verdict.access !== 'unknown';
+}
+
+/**
+ * آیا این رد، خرابیِ **پیکربندی ما**ست نه واقعیتی دربارهٔ کاربر.
+ *
+ * تفکیکی که در نسخهٔ اول از قلم افتاد و باگ واقعی ساخت: توکن باطل‌شده `401`
+ * می‌داد، `401` به `denied` ترجمه می‌شد، و به **هر عضو واقعی** گفته می‌شد
+ * «عضو گروه نیستی». دروغی که خودمان ساخته بودیم.
+ *
+ * دو پیامد دارد و دومی مهم‌تر است:
+ *
+ *   ۱. پیام درست: «الان نمی‌توانم بررسی کنم» به‌جای «عضو نیستی»
+ *   ۲. **کش نمی‌شود.** حکم `denied` ده دقیقه می‌ماند، یعنی حتی پس از درست
+ *      کردن توکن، کاربر ده دقیقه بیرون می‌ماند. `unknown` این را ندارد.
+ *
+ * تصمیم قبلی‌ام دربارهٔ `403` را هم برمی‌گردانم. آن‌موقع استدلال کردم «اگر
+ * ادمینی ربات را بردارند نباید کانال برای همه باز شود» — ولی `unknown` هم
+ * ثبت را **مسدود می‌کند**؛ فقط پیامش صادق‌تر است و کش نمی‌شود. آن نگرانی
+ * بی‌مورد بود.
+ */
+function isOurConfigurationBroken(errorCode: number, description: string): boolean {
+  // توکن باطل یا اشتباه.
+  if (errorCode === 401) return true;
+  // ربات عضو گروه نیست، یا اجازهٔ لازم را ندارد.
+  if (errorCode === 403) return true;
+  // شناسهٔ گروه اشتباه است — برخلاف «member not found» که دربارهٔ کاربر است.
+  if (errorCode === 400 && /chat not found/i.test(description)) return true;
+  return false;
 }

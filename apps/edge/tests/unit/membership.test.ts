@@ -45,15 +45,60 @@ describe('عضویت — پاسخ‌های قطعی', () => {
     expect(verdict.access).toBe('denied');
   });
 
-  it('۴۰۳ (ربات ادمین نیست) هم رد است، نه «عضو»', () => {
-    // اگر این به «مجاز» تفسیر می‌شد، از دست رفتن دسترسی ادمینِ ربات، کانال
-    // را برای همه باز می‌کرد.
+  it('۴۰۳ (ربات عضو گروه نیست) «نامعلوم» است نه «رد»', () => {
+    // این تصمیم **برگردانده شد**. اول `denied` بود با این استدلال که «اگر
+    // ادمینی ربات را بردارند نباید گروه برای همه باز شود» — ولی `unknown`
+    // هم ثبت را مسدود می‌کند؛ فقط پیامش صادق‌تر است و کش نمی‌شود.
     const verdict = interpretMembership({
       outcome: 'rejected',
       errorCode: 403,
-      description: 'Forbidden: bot is not a member of the channel chat',
+      description: 'Forbidden: bot is not a member of the supergroup chat',
+    });
+    expect(verdict.access).toBe('unknown');
+  });
+});
+
+describe('خرابی پیکربندی ما، نه واقعیتی دربارهٔ کاربر', () => {
+  it('۴۰۱ (توکن باطل) «نامعلوم» است نه «رد»', () => {
+    // باگ واقعی: پس از revoke کردن توکن، به **هر عضو واقعی** گفته می‌شد
+    // «عضو گروه نیستی» — دروغی که خودمان ساخته بودیم.
+    const verdict = interpretMembership({
+      outcome: 'rejected',
+      errorCode: 401,
+      description: 'Unauthorized',
+    });
+    expect(verdict.access).toBe('unknown');
+  });
+
+  it('۴۰۰ chat not found «نامعلوم» است — شناسهٔ گروه اشتباه است', () => {
+    const verdict = interpretMembership({
+      outcome: 'rejected',
+      errorCode: 400,
+      description: 'Bad Request: chat not found',
+    });
+    expect(verdict.access).toBe('unknown');
+  });
+
+  it('ولی ۴۰۰ member not found همچنان «رد» است — دربارهٔ کاربر است', () => {
+    // این تفکیک ظریف ولی تعیین‌کننده است: یکی می‌گوید گروه را پیدا نکردم
+    // (مشکل ما)، دیگری می‌گوید این آدم در گروه نیست (واقعیت).
+    const verdict = interpretMembership({
+      outcome: 'rejected',
+      errorCode: 400,
+      description: 'Bad Request: member not found',
     });
     expect(verdict.access).toBe('denied');
+  });
+
+  it('خرابی پیکربندی کش نمی‌شود — پس از اصلاح، بلافاصله کار می‌کند', () => {
+    // مهم‌ترین پیامد: `denied` ده دقیقه کش می‌شد، یعنی حتی پس از درست کردن
+    // توکن، کاربر ده دقیقه بیرون می‌ماند.
+    const tokenRevoked = interpretMembership({
+      outcome: 'rejected',
+      errorCode: 401,
+      description: 'Unauthorized',
+    });
+    expect(isCacheable(tokenRevoked)).toBe(false);
   });
 });
 
