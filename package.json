@@ -24,7 +24,9 @@
     "build:packages": "npm run build -w @alfred-online/jalali -w @alfred-online/contracts",
     "pretest": "npm run build:packages",
     "pretypecheck": "npm run build:packages",
-    "verify": "node scripts/verify.mjs"
+    "verify": "node scripts/verify.mjs",
+    "build": "npm run build:packages && npm run build -w @alfred-online/core",
+    "start": "npm run migrate:deploy -w @alfred-online/core && node apps/core/dist/main.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

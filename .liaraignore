@@ -1,0 +1,18 @@
+# آنچه به سرور نمی‌رود.
+#
+# `apps/edge` و `apps/dashboard` عمداً **نگه داشته می‌شوند**: هر دو در
+# `package-lock.json` به‌عنوان workspace ثبت‌اند و اگر روی دیسک نباشند
+# `npm ci` می‌شکند. حجمشان ۱٫۵ مگ است — بهایی ندارد.
+node_modules
+.git
+.github
+.specify
+specs
+assets
+scripts
+**/tests
+**/*.test.ts
+**/data/*.db*
+.dev.vars
+.env
+.wrangler

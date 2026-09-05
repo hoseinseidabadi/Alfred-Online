@@ -1,0 +1,17 @@
+{
+  "app": "alfred-online-core",
+  "platform": "node",
+  "port": 3001,
+  "build": {
+    "location": "iran"
+  },
+  "disks": [
+    {
+      "name": "data",
+      "mountTo": "/var/lib/alfred"
+    }
+  ],
+  "node": {
+    "version": "22"
+  }
+}

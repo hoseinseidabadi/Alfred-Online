@@ -1,0 +1,7 @@
+{
+  "//": "پیکربندیِ بیلدِ تولید. `nest build` این را به `tsconfig.json` ترجیح می‌دهد.",
+  "//2": "چرا جداست: tsconfig اصلی `tests/**` را هم دارد تا ادیتور و typecheck آن را بپوشانند؛ ولی اگر بیلد هم آن را بردارد، rootDir به ریشهٔ پکیج می‌رود و خروجی `dist/src/main.js` می‌شود نه `dist/main.js` — و آزمون‌ها هم بی‌دلیل به تصویر تولید می‌روند.",
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "tests"]
+}
