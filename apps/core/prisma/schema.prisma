@@ -2,93 +2,51 @@
 //
 // منبع: specs/001-request-intake-triage/data-model.md بخش «ب»
 //
-// دو قاعدهٔ سراسری که در سرتاسر این فایل رعایت شده‌اند:
+// ─────────────────────────────────────────────────────────────────────────
+// چرا SQLite و نه PostgreSQL (اصل VII — متناسب با مقیاس واقعی)
+// ─────────────────────────────────────────────────────────────────────────
+//
+// حجم واقعی این سامانه ۳۰ تا ۵۰ ثبت در ماه است. حتی با افزوده شدن گزارش‌های
+// آتی — بازدید، کلیک، SEO — داده‌ای که اینجا می‌نشیند **خلاصه** است نه رویداد
+// خام: منبع حقیقتِ آنالیتیکس روی Firebase و GA4 است و ما فقط جمع‌بندی‌اش را
+// نگه می‌داریم (همان الگوی `ReportPeriod`). جمع کل زیر ده هزار ردیف در سال.
+//
+// یک دیتابیس مدیریت‌شدهٔ جدا روی لیارا ۳۵۰ هزار تومان در ماه است — ۴٫۲ میلیون
+// در سال برای چند مگابایت داده. همان بیش‌مهندسی‌ای که اصل VII منع کرده.
+//
+// **کِی باید تجدید نظر کرد** — این‌ها را عمداً اینجا می‌نویسم تا فراموش نشود:
+//   • اگر روزی رویداد خام (نه خلاصه) نگه داشته شود
+//   • اگر چند نفر هم‌زمان بنویسند — SQLite قفل تک‌نویسنده دارد؛ امروز یک
+//     تریاژگر داریم پس مسئله نیست
+//   • اگر گزارش تحلیلی با پنجرهٔ زمانی یا همبستگی لازم شود
+//
+// ─────────────────────────────────────────────────────────────────────────
+// دو قاعدهٔ سراسری، بی‌تغییر از نسخهٔ Postgres
+// ─────────────────────────────────────────────────────────────────────────
 //
 //   ۱. هیچ `onDelete: Cascade` — ناوردای ۹ و FR-027: هیچ رکوردی حذف نمی‌شود،
-//      حتی پس از رد. رابطه‌ها روی `Restrict` می‌مانند تا حذف اصلاً ممکن نباشد.
+//      حتی پس از رد. رابطه‌ها روی `Restrict` می‌مانند.
 //
 //   ۲. تمام زمان‌ها UTC ذخیره می‌شوند. هیچ ستون تاریخ جلالی وجود ندارد —
 //      تبدیل فقط در لایهٔ نمایش (R-07، ناوردای ۱۰).
+//
+// ─────────────────────────────────────────────────────────────────────────
+// چه چیزی با مهاجرت از Postgres عوض شد
+// ─────────────────────────────────────────────────────────────────────────
+//
+//   `enum`     → `String`. SQLite enum ندارد. **ایمنی نوع از دست نرفت**:
+//                همان اتحادهای رشته‌ای در `@alfred-online/contracts` تعریف
+//                شده‌اند و کد با آن‌ها کار می‌کند، نه با رشتهٔ آزاد. مقادیر
+//                مجاز در کامنت هر فیلد آمده و مهاجرت `CHECK` می‌گذارد.
+//   `String[]` → `String` حاوی JSON. SQLite آرایه ندارد.
+//   `Json`     → SQLite پشتیبانی می‌کند و بدون تغییر ماند.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-}
-
-// ─── enum ها ──────────────────────────────────────────────────────────────
-
-enum Unit {
-  editorial
-  technical
-  commercial
-  management
-  other
-}
-
-enum RequestType {
-  bug
-  improvement
-  idea
-}
-
-enum RequestStatus {
-  new
-  triaged
-  queued
-  in_progress
-  answered
-  closed
-}
-
-enum TriageOutcome {
-  convert
-  merge
-  reject
-  need_data
-}
-
-enum RequestSource {
-  bot
-  fast_track
-  manual
-}
-
-enum AccessStatus {
-  member
-  exception
-  revoked
-}
-
-enum DerivedDimension {
-  confidence
-  severity
-  impact
-}
-
-enum MilestoneStatus {
-  on_track
-  at_risk
-  done
-}
-
-enum DecisionForum {
-  council
-  fast_track
-}
-
-enum DecisionOutcome {
-  execute
-  park
-  reject
-}
-
-enum ReviewOutcome {
-  worked
-  did_not_work
-  inconclusive
+  provider = "sqlite"
 }
 
 // ─── درخواست ──────────────────────────────────────────────────────────────
@@ -97,31 +55,35 @@ model Request {
   /// `REQ-NNN` — در **لبه** صادر می‌شود، نه اینجا. هرگز تغییر نمی‌کند (FR-020، ناوردای ۳).
   id String @id
 
+  /// `bug` | `improvement` | `idea`
   /// قابل تغییر در تریاژ **بدون** تغییر `id` (FR-021).
-  type RequestType
+  type String
 
-  /// حدس اولیهٔ ثبت‌کننده — برای سنجش نرخ دسته‌بندی اشتباه.
-  originalType RequestType
+  /// حدس اولیهٔ ثبت‌کننده — برای سنجش نرخ دسته‌بندی اشتباه. هرگز عوض نمی‌شود.
+  originalType String
 
   submitterId String
   submitter   Submitter @relation(fields: [submitterId], references: [id], onDelete: Restrict)
-  unit        Unit
+
+  /// `editorial` | `technical` | `commercial` | `management` | `other`
+  unit String
 
   /// عین متن فارسی. **تغییرناپذیر پس از درج** — اصل II، ناوردای ۱، FR-024.
-  /// نگهبانی‌اش در کد است (T060 → `403 IMMUTABLE`)، چون Postgres ستون
-  /// «فقط یک بار نوشتنی» ندارد.
+  /// نگهبانی‌اش در کد است (T060 → `403 IMMUTABLE`).
   rawAnswers Json
 
   attachments Json @default("[]")
 
-  /// ارجاع به سرویس مخزن دانش، یا صریحاً `"unknown"` — الزامی (FR-022، SC-009).
+  /// ارجاع به سرویس مخزن دانش، یا صریحاً `"unknown"` (FR-022، SC-009).
   /// فقط ارجاع، هرگز محتوا (اصل I).
   serviceRef String?
 
-  status        RequestStatus  @default(new)
-  triageOutcome TriageOutcome?
+  /// `new` | `triaged` | `queued` | `in_progress` | `answered` | `closed`
+  status String @default("new")
 
-  /// وقتی `triageOutcome = merge`. خودارجاع، بدون حذف آبشاری.
+  /// `convert` | `merge` | `reject` | `need_data`
+  triageOutcome String?
+
   mergedIntoId String?
   mergedInto   Request?  @relation("RequestMerge", fields: [mergedIntoId], references: [id], onDelete: Restrict)
   mergedFrom   Request[] @relation("RequestMerge")
@@ -133,13 +95,14 @@ model Request {
   isCritical Boolean @default(false)
 
   submittedAt DateTime
-  /// `submittedAt + 7d` — هسته خودش حساب می‌کند (قرارداد bridge-api).
+  /// مشتق از `submittedAt` و **نوع**: خرابی ۳ روز، بهبود و ایده ۷ روز.
   responseDueAt DateTime
   /// بدون مقدار داشتن این، `status` MUST NOT به `closed` برود (ناوردای ۴، FR-029).
   respondedAt DateTime?
   closedAt    DateTime?
 
-  source RequestSource @default(bot)
+  /// `bot` | `fast_track` | `manual`
+  source String @default("bot")
 
   responses     Response[]
   derivedValues DerivedValue[]
@@ -164,11 +127,12 @@ model Submitter {
   displayName String
 
   /// یک بار پرسیده می‌شود و برای همیشه می‌ماند (FR-003).
-  unit Unit
+  unit String
 
-  accessStatus AccessStatus @default(member)
-  firstSeenAt  DateTime     @default(now())
-  requestCount Int          @default(0)
+  /// `member` | `exception` | `revoked`
+  accessStatus String   @default("member")
+  firstSeenAt  DateTime @default(now())
+  requestCount Int      @default(0)
 
   requests Request[]
 }
@@ -182,11 +146,12 @@ model Response {
   requestId String
   request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
 
-  kind TriageOutcome
+  /// `convert` | `merge` | `reject` | `need_data`
+  kind String
   body String
 
   /// هر سه وقتی `kind = reject` الزامی‌اند — FR-031، ناوردای ۵.
-  /// nullable در شما، الزامی در اعتبارسنجی T056.
+  /// nullable در شما، الزامی در اعتبارسنجی T056 و در قید جدول D1 لبه.
   rejectUnderstood String?
   rejectWhyNot     String?
   rejectWhenYes    String?
@@ -195,7 +160,6 @@ model Response {
   approvedBy String
   approvedAt DateTime
 
-  /// لبه آن را کشیده. تا پر نشدن `deliveredAt`، دوباره برگردانده می‌شود.
   handedToEdgeAt DateTime?
   /// فقط با ack لبه پر می‌شود (قرارداد bridge-api بند ۳).
   deliveredAt DateTime?
@@ -212,7 +176,8 @@ model ExtractionRule {
   id      String @id @default(cuid())
   version Int
 
-  dimension DerivedDimension
+  /// `confidence` | `severity` | `impact`
+  dimension String
 
   /// نگاشت پاسخ انسانی به مقدار — **داده، نه کد** (اصل II، R-11، FR-025).
   mapping Json
@@ -230,14 +195,14 @@ model DerivedValue {
   requestId String
   request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
 
-  dimension DerivedDimension
+  /// `confidence` | `severity` | `impact`
+  dimension String
   value     String
 
   /// هر مقدار به قاعده‌ای که تولیدش کرده قابل ردیابی است (ناوردای ۲، FR-026).
   ruleVersion Int
   derivedAt   DateTime @default(now())
 
-  /// اگر انسان مقدار قاعده را دستی عوض کرده باشد.
   overriddenBy String?
 
   /// جدا از `rawAnswers` و هرگز جایگزین آن نمی‌شود (اصل II).
@@ -263,9 +228,8 @@ model QueueItem {
   completedAt DateTime?
   isFastTrack Boolean   @default(false)
 
-  /// ناوردای ۷ — حداکثر یک آیتم هم‌زمان `in_progress`. این قید در سطح پایگاه
-  /// داده با یک partial unique index در مهاجرت T089 بسته می‌شود؛ Prisma در شما
-  /// ایندکس شرطی ندارد.
+  /// ناوردای ۷ — حداکثر یک آیتم هم‌زمان `in_progress`. قید سطح پایگاه داده
+  /// با partial unique index در مهاجرت T089 بسته می‌شود.
   @@index([position])
 }
 
@@ -274,11 +238,12 @@ model Milestone {
   title      String
   targetDate DateTime
 
+  /// `on_track` | `at_risk` | `done`
   /// **مشتق از وابستگی‌ها، نه دستی** (FR-038).
-  status MilestoneStatus @default(on_track)
+  status String @default("on_track")
 
-  /// شناسهٔ `QueueItem` هایی که این مایلستون به آن‌ها وابسته است.
-  dependsOnQueueItems String[]
+  /// آرایهٔ JSON از شناسهٔ `QueueItem` ها. SQLite آرایهٔ بومی ندارد.
+  dependsOnQueueItems String @default("[]")
 
   /// MUST به آیتم مسبب اشاره کند، وقتی `status = at_risk`.
   riskReason String?
@@ -293,9 +258,9 @@ model CouncilSession {
   id     String   @id @default(cuid())
   heldAt DateTime
 
-  /// `count >= 3` — سامانه MUST NOT جلسهٔ تک‌کارتی را تشکیل‌شده ثبت کند
-  /// (FR-039، ناوردای ۸). اعتبارسنجی در T082.
-  cardsPresented String[]
+  /// آرایهٔ JSON. `count >= 3` — سامانه MUST NOT جلسهٔ تک‌کارتی را
+  /// تشکیل‌شده ثبت کند (FR-039، ناوردای ۸). اعتبارسنجی در T082.
+  cardsPresented String @default("[]")
 
   snapshotPath String?
 
@@ -308,11 +273,13 @@ model Decision {
   requestId String
   request   Request @relation(fields: [requestId], references: [id], onDelete: Restrict)
 
-  forum   DecisionForum
-  outcome DecisionOutcome
+  /// `council` | `fast_track`
+  forum String
+  /// `execute` | `park` | `reject`
+  outcome String
 
   /// الزامی وقتی `outcome = execute` — **دقیقاً یکی** (اصل V، FR-040، ناوردای ۶).
-  /// nullable در شما چون مسیر سریع بدون آن هم پذیرفته می‌شود.
+  /// nullable چون مسیر سریع بدون آن هم پذیرفته می‌شود.
   successMetric String?
   reviewDate    DateTime?
 
@@ -326,7 +293,8 @@ model Decision {
   decidedAt DateTime @default(now())
   decidedBy String
 
-  reviewOutcome ReviewOutcome?
+  /// `worked` | `did_not_work` | `inconclusive`
+  reviewOutcome String?
   reviewedAt    DateTime?
 
   sessionId String?
@@ -355,6 +323,13 @@ model AuditEntry {
   @@index([at])
 }
 
+/**
+ * دورهٔ گزارش — و **الگوی نگه‌داشتن خلاصه به‌جای رویداد خام**.
+ *
+ * وقتی گزارش‌های بازدید، کلیک و SEO اضافه شوند، همین شکل را می‌گیرند: یک
+ * ردیف به‌ازای هر دوره با اعداد جمع‌بندی‌شده. منبع حقیقتشان Firebase و GA4
+ * می‌ماند؛ ما فقط چیزی را نگه می‌داریم که مدیر در جلسه می‌پرسد.
+ */
 model ReportPeriod {
   id   String   @id @default(cuid())
   from DateTime

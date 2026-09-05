@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import type {
+  AccessStatus,
   BridgeAccessResponse,
   BridgeHealthResponse,
   BridgePendingStats,
@@ -90,6 +91,8 @@ export class BridgeController {
       where: { chatId },
       select: { accessStatus: true },
     });
-    return { chatId, accessStatus: submitter?.accessStatus ?? 'member' };
+    // SQLite enum ندارد، پس ستون `String` است. تایپ قرارداد اینجا دوباره
+    // اعمال می‌شود تا مرز بیرونی همچنان تایپ‌دار بماند.
+    return { chatId, accessStatus: (submitter?.accessStatus ?? 'member') as AccessStatus };
   }
 }

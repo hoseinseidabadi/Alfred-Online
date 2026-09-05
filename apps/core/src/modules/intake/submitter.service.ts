@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import type { Submitter, Unit } from '@prisma/client';
+import type { Unit } from '@alfred-online/contracts';
+import type { Submitter } from '@prisma/client';
 import { PrismaService } from '../../common/prisma.service';
 
 /**

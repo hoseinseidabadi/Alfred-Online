@@ -9,27 +9,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
 
-    # آزمون‌های یکپارچهٔ هسته روی PostgreSQL واقعی اجرا می‌شوند، نه جایگزین
-    # درون‌حافظه‌ای. قید کلید خارجی و ایندکس یکتا در جایگزین وجود ندارند و
-    # آزمونشان آنجا فقط توهم پوشش است.
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: alfred
-          POSTGRES_PASSWORD: alfred_ci
-          POSTGRES_DB: alfred_online_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U alfred -d alfred_online_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
+    # پایگاه داده SQLite است — فایل روی دیسک، نه سرویس. سرویس Postgres حذف شد.
     env:
-      TEST_DATABASE_URL: postgresql://alfred:alfred_ci@127.0.0.1:5432/alfred_online_test?schema=public
-
+      TEST_DATABASE_URL: file:./data/alfred-test.db
     steps:
       - uses: actions/checkout@v4
 

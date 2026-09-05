@@ -1,16 +1,18 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { existsSync, mkdirSync } from 'node:fs';
+import { dirname, isAbsolute, resolve } from 'node:path';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { PrismaClient } from '@prisma/client';
 
 /**
  * کمک‌کنندهٔ آزمون‌های یکپارچهٔ هسته.
  *
- * آزمون‌های یکپارچه روی **PostgreSQL واقعی** اجرا می‌شوند، نه روی جایگزین
- * درون‌حافظه‌ای (Technical Context برنامه). چیزهایی که این آزمون‌ها می‌سنجند —
- * قید کلید خارجی، ایندکس یکتا، رفتار `RESTRICT` — اصلاً در جایگزین وجود
- * ندارند و آزمونشان آنجا فقط توهم پوشش است.
+ * آزمون‌های یکپارچه روی **همان موتوری** اجرا می‌شوند که در تولید هست —
+ * SQLite با همان مهاجرت‌ها. چیزهایی که می‌سنجند (قید کلید خارجی، ایندکس
+ * یکتا، رفتار `RESTRICT`) در جایگزین درون‌حافظه‌ای وجود ندارند و آزمونشان
+ * آنجا فقط توهم پوشش است.
+ *
+ * فایل آزمون از فایل توسعه جداست و بین آزمون‌ها خالی می‌شود.
  *
  * `CORE_ROOT` و `TEST_DATABASE_URL` را `vitest.config.mts` تزریق می‌کند، پس
  * اینجا هیچ حدسی دربارهٔ مسیر یا محیط زده نمی‌شود.
@@ -18,17 +20,30 @@ import { PrismaClient } from '@prisma/client';
 
 const CORE_ROOT = process.env.CORE_ROOT ?? process.cwd();
 
-/** نشانی پایگاه دادهٔ آزمون، یا `null` اگر تنظیم نشده باشد. */
-export const testDatabaseUrl =
-  process.env.TEST_DATABASE_URL !== undefined && process.env.TEST_DATABASE_URL.length > 0
-    ? process.env.TEST_DATABASE_URL
-    : null;
+/**
+ * نشانی پایگاه دادهٔ آزمون، یا `null` اگر تنظیم نشده باشد.
+ *
+ * مسیر نسبی به **مطلق** تبدیل می‌شود: Vitest از ریشهٔ مخزن اجرا می‌شود، پس
+ * `file:./data/…` به جای اشتباهی می‌رسید و SQLite با «پوشه وجود ندارد»
+ * می‌شکست. `CORE_ROOT` را `vitest.config.mts` تزریق می‌کند.
+ */
+export const testDatabaseUrl = resolveSqliteUrl(process.env.TEST_DATABASE_URL);
+
+function resolveSqliteUrl(raw: string | undefined): string | null {
+  if (raw === undefined || raw.length === 0) return null;
+  if (!raw.startsWith('file:')) return raw;
+  const path = raw.slice('file:'.length);
+  if (isAbsolute(path)) return raw;
+  const absolute = resolve(CORE_ROOT, path);
+  mkdirSync(dirname(absolute), { recursive: true });
+  return `file:${absolute}`;
+}
 
 export const hasTestDatabase = testDatabaseUrl !== null;
 
 /** پیامی که در صورت نبودِ پایگاه داده به‌جای آزمون چاپ می‌شود. */
 export const NO_DATABASE_REASON =
-  'TEST_DATABASE_URL تنظیم نشده — `docker compose up -d` را بزن و `apps/core/.env` را از `.env.example` بساز.';
+  'TEST_DATABASE_URL تنظیم نشده — `apps/core/.env` را از `.env.example` بساز.';
 
 let migrated = false;
 
@@ -56,10 +71,9 @@ export function applyMigrations(): void {
 /**
  * خطای خام پرایزما را به چیزی تبدیل می‌کند که بشود روی آن عمل کرد.
  *
- * چرا لازم است: دو بار مجموعهٔ آزمون بی‌دلیل قرمز شد و هر بار وقت رفت تا معلوم
- * شود **داکر دسکتاپ خودش بسته شده** و کانتینر Postgres با آن رفته. خروجی خام
- * فقط `P1001: Can't reach database server` بود و Vitest هم آزمون‌ها را
- * «skipped» گزارش می‌کرد — ترکیبی که کاملاً گمراه‌کننده است.
+ * چرا لازم است: Vitest شکستِ `beforeAll` را «skipped» گزارش می‌کند، که با
+ * یک خطای خام پرایزما ترکیب شود کاملاً گمراه‌کننده است. این تابع خطا را به
+ * چیزی تبدیل می‌کند که بشود رویش عمل کرد.
  */
 function describeMigrationFailure(error: unknown): string {
   const raw = error instanceof Error ? `${error.message}` : String(error);
@@ -99,22 +113,29 @@ function prismaCliPath(): string {
 /** کلاینتی که به پایگاه دادهٔ آزمون وصل است. */
 export function testClient(): PrismaClient {
   if (testDatabaseUrl === null) throw new Error(NO_DATABASE_REASON);
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: testDatabaseUrl }) });
+  return new PrismaClient({ adapter: new PrismaBetterSqlite3({ url: testDatabaseUrl }) });
 }
 
 /**
  * همهٔ جدول‌ها را خالی می‌کند.
  *
- * `TRUNCATE ... CASCADE` عمداً اینجا استفاده می‌شود و با ناوردای ۹ تناقضی
- * ندارد: آن ناوردا دربارهٔ **کد سامانه** است که هرگز رکوردی حذف نمی‌کند، نه
- * دربارهٔ پاک کردن یک پایگاه دادهٔ آزمونِ دورریختنی بین دو آزمون.
+ * جزئیاتش در بدنه توضیح داده شده.
  */
 export async function resetDatabase(prisma: PrismaClient): Promise<void> {
-  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
-    SELECT tablename FROM pg_tables
-    WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'
+  const tables = await prisma.$queryRaw<{ name: string }[]>`
+    SELECT name FROM sqlite_master
+    WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> '_prisma_migrations'
   `;
   if (tables.length === 0) return;
-  const list = tables.map((t) => `"public"."${t.tablename}"`).join(', ');
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
+  // SQLite دستور TRUNCATE ندارد. کلیدهای خارجی موقتاً خاموش می‌شوند چون همهٔ
+  // رابطه‌ها `RESTRICT` اند (ناوردای ۹) و بدون این، پاک کردن ناممکن است.
+  //
+  // این با ناوردای ۹ تناقضی ندارد: آن ناوردا دربارهٔ **کد سامانه** است که
+  // هرگز رکوردی حذف نمی‌کند، نه دربارهٔ پاک کردن یک پایگاه دادهٔ آزمونِ
+  // دورریختنی بین دو آزمون.
+  await prisma.$executeRawUnsafe('PRAGMA foreign_keys = OFF');
+  for (const { name } of tables) {
+    await prisma.$executeRawUnsafe(`DELETE FROM "${name}"`);
+  }
+  await prisma.$executeRawUnsafe('PRAGMA foreign_keys = ON');
 }

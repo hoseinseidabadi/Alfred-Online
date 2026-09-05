@@ -9,9 +9,9 @@ import { applyMigrations, hasTestDatabase, resetDatabase, testClient } from '../
 /**
  * آزمون قرارداد `POST /bridge/submissions` — T030.
  *
- * روی PostgreSQL واقعی اجرا می‌شود چون چیزی که می‌سنجد — idempotency روی کلید
- * اصلی، حفظ ترتیب، دست‌نخوردگی `jsonb` فارسی — در هیچ جایگزین درون‌حافظه‌ای
- * وجود ندارد.
+ * روی همان موتور تولید اجرا می‌شود چون چیزی که می‌سنجد — idempotency روی کلید
+ * اصلی، حفظ ترتیب، دست‌نخوردگی JSON فارسی — در هیچ جایگزین درون‌حافظه‌ای وجود
+ * ندارد.
  */
 
 const submission = (over: Partial<BridgeSubmission> = {}): BridgeSubmission => ({
