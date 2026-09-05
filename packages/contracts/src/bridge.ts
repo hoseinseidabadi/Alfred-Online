@@ -15,6 +15,7 @@ import type {
   IsoUtcTimestamp,
   RawAnswers,
   RequestType,
+  TriageOutcome,
   Unit,
 } from './common';
 
@@ -131,4 +132,50 @@ export interface BridgePendingStats {
   lastSuccessfulContactAt: IsoUtcTimestamp | null;
   /** خطای آخرین تلاش ناموفق، اگر بوده. */
   lastError: string | null;
+}
+
+// ── ۶. POST /bridge/decisions ───────────────────────────────────────────────
+
+/**
+ * تصمیم تریاژی که از **میز تلگرامی** گرفته شده و پاسخش **قبلاً** به ثبت‌کننده
+ * رسیده است.
+ *
+ * افزودهٔ ما به قرارداد اصلی — جهت سوم پل. بند ۱ ثبت‌ها را از لبه به هسته
+ * می‌برد، بند ۲ پاسخ‌ها را برمی‌گرداند، و این یکی تصمیم‌هایی را می‌برد که در
+ * خودِ لبه گرفته شده‌اند.
+ *
+ * **چرا لازم شد** (اصل III): اگر میز تریاژ منتظر تأیید هسته می‌ماند، در قطعی
+ * گیر می‌کرد و ثبت‌کننده جوابش را نمی‌گرفت. پس لبه اعتبارسنجی می‌کند، تحویل
+ * می‌دهد، و تصمیم را صف می‌کند تا Cron برساند.
+ *
+ * پیامدش: هسته ممکن است تا چند دقیقه پس از ثبت‌کننده خبردار شود. پذیرفته شده —
+ * همان معامله‌ای که اصل III برای کل سامانه کرده.
+ */
+export interface BridgeDecision {
+  /** `RSP-NNNN` — در لبه صادر شده. کلید idempotency. */
+  responseId: string;
+  requestId: string;
+  /** `convert` | `merge` | `reject` | `need_data` */
+  outcome: TriageOutcome;
+  /** متنی که **عیناً** به ثبت‌کننده رسید. هسته MUST بازنویسی‌اش نکند. */
+  body: string;
+  /** هر سه پر هستند وقتی `outcome = reject` — FR-031. لبه پیشاپیش سنجیده. */
+  rejectUnderstood?: string;
+  rejectWhyNot?: string;
+  rejectWhenYes?: string;
+  /** چه کسی تأیید کرد — FR-033. هرگز خالی نیست. */
+  approvedBy: string;
+  decidedAt: IsoUtcTimestamp;
+  /** لحظهٔ رسیدن به ثبت‌کننده. **پیش از** رسیدن این تصمیم به هسته رخ داده. */
+  deliveredToUserAt: IsoUtcTimestamp | null;
+}
+
+export interface BridgeDecisionsRequest {
+  /** MUST به‌ترتیب `decidedAt` مرتب باشد. */
+  decisions: BridgeDecision[];
+}
+
+export interface BridgeDecisionsResponse {
+  accepted: string[];
+  rejected: BridgeRejectedSubmission[];
 }

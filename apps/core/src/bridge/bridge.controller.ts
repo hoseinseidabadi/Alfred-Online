@@ -2,6 +2,8 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import type {
   AccessStatus,
   BridgeAccessResponse,
+  BridgeDecisionsRequest,
+  BridgeDecisionsResponse,
   BridgeHealthResponse,
   BridgePendingStats,
   BridgeSubmissionsRequest,
@@ -9,6 +11,7 @@ import type {
 } from '@alfred-online/contracts';
 import { PrismaService } from '../common/prisma.service';
 import { RequestService } from '../modules/intake/request.service';
+import { ResponseService } from '../modules/intake/response.service';
 import { BridgeKeyGuard } from './bridge-key.guard';
 import { BridgeHealthService } from './bridge-health.service';
 
@@ -24,6 +27,7 @@ import { BridgeHealthService } from './bridge-health.service';
 export class BridgeController {
   constructor(
     private readonly requests: RequestService,
+    private readonly responses: ResponseService,
     private readonly health: BridgeHealthService,
     private readonly prisma: PrismaService,
   ) {}
@@ -50,6 +54,32 @@ export class BridgeController {
         // «تکراری» هم `accepted` است — لبه باید بتواند رکورد را از صف بردارد.
         // اگر «رد» گزارش می‌شد، تا ابد دوباره می‌فرستادش.
         accepted.push(outcome.requestId);
+      }
+    }
+
+    return { accepted, rejected };
+  }
+
+  /**
+   * تصمیم‌های میز تلگرامی — جهت سوم پل.
+   *
+   * پاسخ **قبلاً** به ثبت‌کننده رسیده؛ اینجا فقط در منبع حقیقت ثبت می‌شود.
+   * همان الگوی بند ۱: ترتیبی، idempotent، و رد شدن یک قلم بقیه را زمین
+   * نمی‌زند.
+   */
+  @Post('decisions')
+  async decisions(@Body() body: BridgeDecisionsRequest): Promise<BridgeDecisionsResponse> {
+    const accepted: string[] = [];
+    const rejected: BridgeDecisionsResponse['rejected'] = [];
+
+    for (const decision of body.decisions ?? []) {
+      const outcome = await this.responses.record(decision);
+      if (outcome.status === 'rejected') {
+        // `requestId` گزارش می‌شود نه `responseId`، چون همان چیزی است که
+        // آدم در لاگ دنبالش می‌گردد.
+        rejected.push({ requestId: decision.requestId, reason: outcome.reason });
+      } else {
+        accepted.push(outcome.responseId);
       }
     }
 

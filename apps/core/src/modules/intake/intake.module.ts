@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DeadlineService } from './deadline.service';
 import { RequestService } from './request.service';
+import { ResponseService } from './response.service';
 import { SubmitterService } from './submitter.service';
 
 /**
@@ -8,7 +9,7 @@ import { SubmitterService } from './submitter.service';
  * `dashboard` و `reports` جداگانه می‌آیند و از راه قرارداد حرف می‌زنند.
  */
 @Module({
-  providers: [DeadlineService, RequestService, SubmitterService],
-  exports: [DeadlineService, RequestService, SubmitterService],
+  providers: [DeadlineService, RequestService, ResponseService, SubmitterService],
+  exports: [DeadlineService, RequestService, ResponseService, SubmitterService],
 })
 export class IntakeModule {}
