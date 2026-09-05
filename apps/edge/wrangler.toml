@@ -31,9 +31,9 @@ crons = ["*/2 * * * *"]
 
 [vars]
 ENVIRONMENT = "development"
-# هستهٔ محلی — از Worker مستقرشده در دسترس نیست، پس صف انباشته می‌شود.
-# این دقیقاً سناریوی V-4 در دنیای واقعی است. با رفتن هسته روی لیارا عوض می‌شود.
-CORE_URL = "http://127.0.0.1:3001"
+# هستهٔ مستقرشده روی لیارا — تیم برسا سندباکس، شبکهٔ alfred-online.
+# برای توسعهٔ محلی، `.dev.vars` این را با http://127.0.0.1:3001 بازنویسی می‌کند.
+CORE_URL = "https://alfred-online-core.liara.run"
 
 # اسرار هرگز اینجا نمی‌آیند — فقط `.dev.vars` محلی و Secret Store در استقرار:
 #   TELEGRAM_TOKEN · WEBHOOK_SECRET · BRIDGE_KEY · CORE_URL · ACCESS_GROUP_ID
